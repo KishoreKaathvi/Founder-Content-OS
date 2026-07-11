@@ -23,6 +23,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Home,
 } from "lucide-react";
 import type { AppView, KseAnalysisApi } from "../hooks/useKseAnalysis";
 import Tooltip from "../components/Tooltip";
@@ -46,9 +47,11 @@ const NAV: {
 export default function AppShell({
   api,
   children,
+  onExitPortal,
 }: {
   api: KseAnalysisApi;
   children: React.ReactNode;
+  onExitPortal?: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -108,19 +111,28 @@ export default function AppShell({
           }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-8 h-8 shrink-0 rounded flex items-center justify-center font-mono font-bold text-xs relative"
+            <button
+              type="button"
+              className="w-8 h-8 shrink-0 rounded flex items-center justify-center font-mono font-bold text-xs relative cursor-pointer"
               style={{
                 background: "linear-gradient(145deg, var(--accent-dim), transparent)",
                 color: "var(--accent)",
                 border: "1px solid var(--accent-border)",
                 boxShadow: "0 0 16px var(--accent-glow)",
               }}
+              onClick={onExitPortal}
+              title={onExitPortal ? "Back to landing" : "KSE"}
+              aria-label={onExitPortal ? "Back to landing page" : "Knowledge Signal Engine"}
             >
               KSE
-            </div>
+            </button>
             {!collapsed && (
-              <div className="kse-nav-label min-w-0">
+              <button
+                type="button"
+                className="kse-nav-label min-w-0 text-left cursor-pointer bg-transparent border-0 p-0"
+                onClick={onExitPortal}
+                title={onExitPortal ? "Back to landing" : undefined}
+              >
                 <div className="text-[12px] font-semibold tracking-tight leading-tight">
                   Knowledge Signal
                 </div>
@@ -130,7 +142,7 @@ export default function AppShell({
                 >
                   Provenance OS
                 </div>
-              </div>
+              </button>
             )}
           </div>
           {!collapsed && (
@@ -301,6 +313,20 @@ export default function AppShell({
             borderColor: "var(--border)",
           }}
         >
+          {onExitPortal && (
+            <Tooltip content="Back to landing page">
+              <button
+                type="button"
+                className="kse-btn kse-btn-ghost flex items-center gap-1.5 px-2 py-1 shrink-0 text-[10px] font-mono uppercase tracking-wider"
+                onClick={onExitPortal}
+                aria-label="Back to landing page"
+              >
+                <Home size={13} />
+                <span className="hidden sm:inline">Landing</span>
+              </button>
+            </Tooltip>
+          )}
+
           <div
             className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded border shrink-0"
             style={{

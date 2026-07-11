@@ -1,5 +1,6 @@
 /**
  * Landing (default) → Enterprise portal (no auth).
+ * Route: hash `#portal` = lab. Anything else (incl. bare `/`) = landing.
  */
 import React, { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
@@ -14,15 +15,17 @@ import VerifyView from "./views/VerifyView";
 import TuningView from "./views/TuningView";
 import AlertsView from "./views/AlertsView";
 
-function PortalApp({ onExitLanding }: { onExitLanding?: () => void }) {
+function isPortalRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.hash === "#portal";
+}
+
+function PortalApp({ onExitPortal }: { onExitPortal: () => void }) {
   const api = useKseAnalysis();
 
-  // Optional: expose return-to-landing via hash only if needed later
-  void onExitLanding;
-
   return (
-    <AppShell api={api}>
-      {api.isLoading && (
+    <AppShell api={api} onExitPortal={onExitPortal}>
+      {api.isLoading && api.activeView !== "overview" && api.activeView !== "sources" && (
         <div
           className="absolute inset-0 z-40 flex items-center justify-center"
           style={{
@@ -60,29 +63,55 @@ function PortalApp({ onExitLanding }: { onExitLanding?: () => void }) {
 }
 
 export default function App() {
-  const [inPortal, setInPortal] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      window.location.hash === "#portal" ||
-      sessionStorage.getItem("kse-in-portal") === "1"
-    );
-  });
+  const [inPortal, setInPortal] = useState(() => isPortalRoute());
 
   const enterPortal = useCallback(() => {
-    sessionStorage.setItem("kse-in-portal", "1");
-    window.location.hash = "portal";
-    setInPortal(true);
+    // Drop legacy sticky flag from older builds
+    try {
+      sessionStorage.removeItem("kse-in-portal");
+    } catch {
+      /* ignore */
+    }
+    if (window.location.hash !== "#portal") {
+      window.location.hash = "portal";
+    } else {
+      setInPortal(true);
+    }
+  }, []);
+
+  const exitPortal = useCallback(() => {
+    try {
+      sessionStorage.removeItem("kse-in-portal");
+    } catch {
+      /* ignore */
+    }
+    setInPortal(false);
+    // Clear hash so refresh/bookmarks land on marketing page
+    if (window.location.hash) {
+      const { pathname, search } = window.location;
+      window.history.pushState(null, "", pathname + search);
+    }
   }, []);
 
   useEffect(() => {
-    const onHash = () => {
-      if (window.location.hash === "#portal") {
-        sessionStorage.setItem("kse-in-portal", "1");
-        setInPortal(true);
+    const syncFromUrl = () => {
+      const next = isPortalRoute();
+      setInPortal(next);
+      if (!next) {
+        try {
+          sessionStorage.removeItem("kse-in-portal");
+        } catch {
+          /* ignore */
+        }
       }
     };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+
+    window.addEventListener("hashchange", syncFromUrl);
+    window.addEventListener("popstate", syncFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncFromUrl);
+      window.removeEventListener("popstate", syncFromUrl);
+    };
   }, []);
 
   // Landing only mounts portal analysis after enter (avoids auto-run on marketing page)
@@ -90,5 +119,5 @@ export default function App() {
     return <LandingPage onEnter={enterPortal} />;
   }
 
-  return <PortalApp />;
+  return <PortalApp onExitPortal={exitPortal} />;
 }

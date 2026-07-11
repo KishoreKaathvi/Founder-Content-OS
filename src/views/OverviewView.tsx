@@ -223,6 +223,168 @@ export default function OverviewView({ api }: { api: KseAnalysisApi }) {
         </div>
       )}
 
+      {api.isLoading && (
+        <div className="space-y-4">
+          {/* KPI Cards Skeletons */}
+          <div className="kse-grid-metrics mb-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="kse-metric kse-pulse">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-7 w-16 rounded bg-[var(--surface-2)]" />
+                    <div className="h-3.5 w-24 rounded bg-[var(--surface-2)]" />
+                    <div className="h-2.5 w-20 rounded bg-[var(--surface-2)]" />
+                  </div>
+                  <div className="w-[72px] h-[32px] rounded bg-[var(--surface-2)] opacity-40" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Main Intelligence Grid Skeletons */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 mb-4">
+            {/* Pipeline Reduction */}
+            <div className="kse-surface xl:col-span-5 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-32 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body space-y-4">
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map((idx) => (
+                    <div key={idx} className="h-6 rounded bg-[var(--surface-2)] w-full" style={{ opacity: 1 - idx * 0.15 }} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-16 rounded bg-[var(--surface-2)]" />
+                    <div className="h-5 w-12 rounded bg-[var(--surface-2)]" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-16 rounded bg-[var(--surface-2)]" />
+                    <div className="h-5 w-12 rounded bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Score Vector Radar */}
+            <div className="kse-surface xl:col-span-4 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-24 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body flex flex-col items-center justify-center h-[220px]">
+                <div className="w-[120px] h-[120px] rounded-full border-4 border-dashed border-[var(--surface-2)] flex items-center justify-center">
+                  <div className="w-[80px] h-[80px] rounded-full border-4 border-dashed border-[var(--surface-2)] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Edge Taxonomy Donut */}
+            <div className="kse-surface xl:col-span-3 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-28 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body flex items-center justify-center h-[220px]">
+                <div className="w-[120px] h-[120px] rounded-full border-8 border-[var(--surface-2)] flex items-center justify-center">
+                  <div className="h-4 w-12 rounded bg-[var(--surface-2)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline & Leaderboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-4">
+            {/* Cascade Timeline */}
+            <div className="kse-surface lg:col-span-4 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-32 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body space-y-2">
+                <div className="grid grid-cols-10 gap-1.5">
+                  {Array.from({ length: 40 }).map((_, i) => (
+                    <div key={i} className="aspect-square rounded bg-[var(--surface-2)]" style={{ opacity: Math.random() * 0.7 + 0.3 }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="kse-surface lg:col-span-4 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-40 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <div className="h-3.5 w-24 rounded bg-[var(--surface-2)]" />
+                      <div className="h-3.5 w-8 rounded bg-[var(--surface-2)]" />
+                    </div>
+                    <div className="h-2 w-full rounded bg-[var(--surface-2)]" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Jump Desk */}
+            <div className="kse-surface lg:col-span-4 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-24 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-10 rounded bg-[var(--surface-2)] w-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Analyst Brief & Table */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            {/* Analyst Brief */}
+            <div className="kse-surface lg:col-span-5 kse-pulse">
+              <div className="kse-panel-head">
+                <div className="h-4 w-24 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="kse-panel-body space-y-2">
+                <div className="h-3 rounded bg-[var(--surface-2)] w-full" />
+                <div className="h-3 rounded bg-[var(--surface-2)] w-5/6" />
+                <div className="h-3 rounded bg-[var(--surface-2)] w-4/5" />
+                <div className="h-3 rounded bg-[var(--surface-2)] w-2/3" />
+              </div>
+            </div>
+
+            {/* Top original nodes table */}
+            <div className="kse-surface lg:col-span-7 kse-pulse">
+              <div className="kse-panel-head flex justify-between">
+                <div className="h-4 w-32 rounded bg-[var(--surface-2)]" />
+                <div className="h-6 w-16 rounded bg-[var(--surface-2)]" />
+              </div>
+              <div className="p-3 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex justify-between items-center py-2 border-b border-[var(--border)] last:border-0">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="h-4 w-4 rounded bg-[var(--surface-2)]" />
+                      <div className="space-y-1.5 flex-1 max-w-xs">
+                        <div className="h-3 w-16 rounded bg-[var(--surface-2)]" />
+                        <div className="h-2.5 w-full rounded bg-[var(--surface-2)]" />
+                      </div>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="h-3 w-8 rounded bg-[var(--surface-2)]" />
+                      <div className="h-3 w-8 rounded bg-[var(--surface-2)]" />
+                      <div className="h-3 w-8 rounded bg-[var(--surface-2)]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!res && !api.isLoading && !api.error && (
         <div className="kse-empty kse-surface">
           <Activity size={28} style={{ color: "var(--accent)" }} />
@@ -232,7 +394,7 @@ export default function OverviewView({ api }: { api: KseAnalysisApi }) {
         </div>
       )}
 
-      {res && analytics && (
+      {res && analytics && !api.isLoading && (
         <>
           {/* KPI strip with sparklines */}
           <div className="kse-grid-metrics mb-4">

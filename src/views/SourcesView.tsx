@@ -7,6 +7,76 @@ export default function SourcesView({ api }: { api: KseAnalysisApi }) {
   const list = api.searchedOriginals;
   const selected = api.selectedOriginal;
 
+  if (api.isLoading) {
+    return (
+      <div className="kse-page kse-fade-in">
+        <div className="kse-page-header">
+          <div>
+            <div className="kse-label mb-1" style={{ color: "var(--accent)" }}>
+              Source finder
+            </div>
+            <h1 className="kse-page-title">Ranked originals</h1>
+            <p className="kse-page-sub">
+              Querying and ranking original sources...
+            </p>
+          </div>
+          <span className="w-12 h-6 rounded bg-[var(--surface-2)] animate-pulse" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] gap-4 items-start">
+          <div className="space-y-3 min-w-0">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="kse-surface p-4 space-y-3 kse-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[var(--surface-2)]" />
+                  <div className="space-y-1">
+                    <div className="h-3 w-24 rounded bg-[var(--surface-2)]" />
+                    <div className="h-2 w-16 rounded bg-[var(--surface-2)]" />
+                  </div>
+                </div>
+                <div className="h-3.5 w-full rounded bg-[var(--surface-2)]" />
+                <div className="h-3.5 w-5/6 rounded bg-[var(--surface-2)]" />
+                <div className="flex gap-4 pt-2 border-t border-[var(--border)]">
+                  <div className="h-3 w-12 rounded bg-[var(--surface-2)]" />
+                  <div className="h-3 w-12 rounded bg-[var(--surface-2)]" />
+                  <div className="h-3 w-12 rounded bg-[var(--surface-2)]" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <aside className="kse-surface p-5 space-y-4 kse-pulse">
+            <div>
+              <div className="h-2 w-10 rounded bg-[var(--surface-2)] mb-2" />
+              <div className="h-4 w-32 rounded bg-[var(--surface-2)] mb-1" />
+              <div className="h-3 w-20 rounded bg-[var(--surface-2)]" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-3 w-full rounded bg-[var(--surface-2)]" />
+              <div className="h-3 w-full rounded bg-[var(--surface-2)]" />
+              <div className="h-3 w-3/4 rounded bg-[var(--surface-2)]" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 w-16 rounded bg-[var(--surface-2)] mb-2" />
+              <div className="h-3 w-full rounded bg-[var(--surface-2)]" />
+            </div>
+            <div className="space-y-3">
+              <div className="h-2 w-16 rounded bg-[var(--surface-2)]" />
+              {[1, 2, 3, 4, 5].map((idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <div className="w-16 h-2 rounded bg-[var(--surface-2)]" />
+                  <div className="flex-1 h-2 rounded bg-[var(--surface-2)]" />
+                  <div className="w-8 h-2 rounded bg-[var(--surface-2)]" />
+                </div>
+              ))}
+            </div>
+            <div className="h-9 rounded bg-[var(--surface-2)] w-full" />
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
   if (!api.overriddenResult) {
     return (
       <div className="kse-page">
