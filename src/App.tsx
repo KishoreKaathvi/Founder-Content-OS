@@ -1,11 +1,11 @@
 /**
- * Knowledge Signal Engine — multi-view enterprise shell.
- * One concern per view; no single-page dump.
+ * Landing (default) → Enterprise portal (no auth).
  */
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useKseAnalysis } from "./hooks/useKseAnalysis";
 import AppShell from "./layout/AppShell";
+import LandingPage from "./landing/LandingPage";
 import OverviewView from "./views/OverviewView";
 import SourcesView from "./views/SourcesView";
 import GraphView from "./views/GraphView";
@@ -14,8 +14,11 @@ import VerifyView from "./views/VerifyView";
 import TuningView from "./views/TuningView";
 import AlertsView from "./views/AlertsView";
 
-export default function App() {
+function PortalApp({ onExitLanding }: { onExitLanding?: () => void }) {
   const api = useKseAnalysis();
+
+  // Optional: expose return-to-landing via hash only if needed later
+  void onExitLanding;
 
   return (
     <AppShell api={api}>
@@ -38,10 +41,7 @@ export default function App() {
             <div className="text-[12px] font-mono uppercase tracking-wider">
               Pipeline running
             </div>
-            <div
-              className="text-[11px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <div className="text-[11px]" style={{ color: "var(--text-muted)" }}>
               Collect → filter → graph → rank → report
             </div>
           </div>
@@ -57,4 +57,38 @@ export default function App() {
       {api.activeView === "alerts" && <AlertsView api={api} />}
     </AppShell>
   );
+}
+
+export default function App() {
+  const [inPortal, setInPortal] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.location.hash === "#portal" ||
+      sessionStorage.getItem("kse-in-portal") === "1"
+    );
+  });
+
+  const enterPortal = useCallback(() => {
+    sessionStorage.setItem("kse-in-portal", "1");
+    window.location.hash = "portal";
+    setInPortal(true);
+  }, []);
+
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === "#portal") {
+        sessionStorage.setItem("kse-in-portal", "1");
+        setInPortal(true);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  // Landing only mounts portal analysis after enter (avoids auto-run on marketing page)
+  if (!inPortal) {
+    return <LandingPage onEnter={enterPortal} />;
+  }
+
+  return <PortalApp />;
 }

@@ -35,12 +35,15 @@ Read in this order:
 
 ## Features (current lab app)
 
+- **Motion landing page** (default) — enterprise marketing surface; **one button** enters the portal (**no auth**)
 - **Multi-view shell:** Command · Sources · Cascade (graph) · Noise · Verify · Weights · Watchlist  
 - **Collapsible nav** (⌘/Ctrl+B), **Light / Dark / System** theme  
 - **Pipeline:** noise filter → edges → DSU components → `source_fitness` → multi-signal scores → report  
 - **Command center:** funnel, score-vector donut, edge taxonomy, timeline heat, leaderboard  
 - **Exports:** Share deep-link, PDF, TXT, JSON  
 - **Resilience:** Gemini model ladder + offline fallback dataset when no key / quota  
+
+Open the portal via **Enter enterprise portal** or `http://localhost:3000/#portal`.
 
 ---
 
