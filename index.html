@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knowledge Signal Engine</title>
+    <script>
+      (function() {
+        // Safe-guard to prevent 'Cannot set property fetch of #<Window> which has only a getter'
+        var currentFetch = window.fetch;
+        try {
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return currentFetch; },
+            set: function(val) { currentFetch = val; },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          try {
+            Object.defineProperty(Window.prototype, 'fetch', {
+              get: function() { return currentFetch; },
+              set: function(val) { currentFetch = val; },
+              configurable: true,
+              enumerable: true
+            });
+          } catch (e2) {
+            console.warn("KSE: Could not redefine fetch setter", e2);
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

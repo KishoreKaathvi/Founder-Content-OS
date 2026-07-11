@@ -1,0 +1,6 @@
+{
+  "name": "Knowledge Signal Engine",
+  "description": "An AI-powered social intelligence platform that identifies original high-signal information sources, traces derivative cascades, and analyzes information provenance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Base Theme Values (System Default / Dark Mode) */
+:root, .dark {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #090d16;
+
+  --color-emerald-950: #064e3b;
+  --color-sky-950: #082f49;
+}
+
+/* Premium Light Theme Overrides */
+.light {
+  /* Invert Slate palette hierarchy to maintain layout contrast */
+  --color-slate-50: #0f172a;   /* text-slate-50 is dark text */
+  --color-slate-100: #0f172a;  /* text-slate-100 is dark slate text */
+  --color-slate-200: #1e293b;  /* text-slate-200 is secondary text */
+  --color-slate-300: #334155;  /* text-slate-300 is tertiary text */
+  --color-slate-400: #475569;  /* text-slate-400 is muted text */
+  --color-slate-500: #576574;  /* text-slate-500 is faint text */
+  --color-slate-600: #7b8a9a;  /* text-slate-600 is subtext */
+  
+  --color-slate-700: #e2e8f0;  /* light borders/dividers */
+  --color-slate-800: #cbd5e1;  /* light border secondary */
+  --color-slate-900: #ffffff;  /* bg-slate-900 becomes crisp white card background */
+  --color-slate-950: #f8fafc;  /* bg-slate-950 becomes soft light-gray page background */
+
+  /* In light mode, deep dark green/blue backgrounds inside cards would look out of place,
+     so we transition them to light pastel-tint backgrounds for clean, native styling */
+  --color-emerald-950: #ecfdf5; 
+  --color-sky-950: #f0f9ff;
+}
+
+/* Prevent borders from disappearing when elements use slate-900 as white background in light theme */
+.light .border-slate-900,
+.light .border-slate-800,
+.light .border-slate-900\/40,
+.light .border-slate-800\/40 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Render semitransparent cards beautifully on light gray background */
+.light .bg-slate-950\/40,
+.light .bg-slate-950\/80,
+.light .bg-slate-950\/90 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+
+.light .bg-slate-900\/30,
+.light .bg-slate-900\/40,
+.light .bg-slate-900\/50,
+.light .bg-slate-900\/60,
+.light .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Ensure placeholder texts in input fields remain highly legible in light mode */
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
