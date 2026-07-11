@@ -410,36 +410,51 @@ export default function RelationshipGraph({
   }, [simNodes, hoveredNodeId]);
 
   return (
-    <div id="relationship-graph-container" className="relative flex flex-col h-full bg-slate-900/60 rounded-xl border border-slate-800 backdrop-blur-md overflow-hidden">
+    <div
+      id="relationship-graph-container"
+      className="relative flex flex-col h-full overflow-hidden"
+      style={{
+        background: "radial-gradient(ellipse at 30% 20%, rgba(61,255,168,0.06), transparent 50%), #030508",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-md)",
+      }}
+    >
       {/* Header controls */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-950/80 border-b border-slate-800">
+      <div
+        className="flex items-center justify-between px-3 py-2 shrink-0"
+        style={{
+          background: "linear-gradient(180deg, var(--surface-2), transparent)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-mono text-slate-400">provenance-graph-visualizer v1.0</span>
+          <div
+            className="w-1.5 h-1.5 rounded-full kse-pulse"
+            style={{ background: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }}
+          />
+          <span
+            className="text-[10px] font-mono uppercase tracking-[0.12em]"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Force cascade · DSU components
+          </span>
+          <span className="kse-badge kse-badge-accent">{items.length}N</span>
+          <span className="kse-badge kse-badge-info">{edges.length}E</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Tooltip content="Zoom In (Increase graph size)">
-            <button
-              onClick={() => setZoom((z) => Math.min(2.5, z + 0.1))}
-              className="p-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition cursor-pointer"
-            >
-              <ZoomIn size={14} />
+        <div className="flex items-center gap-1">
+          <Tooltip content="Zoom in">
+            <button type="button" onClick={() => setZoom((z) => Math.min(2.5, z + 0.1))} className="kse-btn kse-btn-icon">
+              <ZoomIn size={13} />
             </button>
           </Tooltip>
-          <Tooltip content="Zoom Out (Decrease graph size)">
-            <button
-              onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
-              className="p-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition cursor-pointer"
-            >
-              <ZoomOut size={14} />
+          <Tooltip content="Zoom out">
+            <button type="button" onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} className="kse-btn kse-btn-icon">
+              <ZoomOut size={13} />
             </button>
           </Tooltip>
-          <Tooltip content="Reset view and recenter graph camera">
-            <button
-              onClick={handleResetZoom}
-              className="p-1 rounded bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-mono transition px-1.5 cursor-pointer"
-            >
-              recenter
+          <Tooltip content="Recenter camera">
+            <button type="button" onClick={handleResetZoom} className="kse-btn" style={{ height: 32, fontSize: 10, fontFamily: "var(--font-mono)" }}>
+              RECENTER
             </button>
           </Tooltip>
         </div>
@@ -462,9 +477,13 @@ export default function RelationshipGraph({
         >
           {/* Defined background grid */}
           <defs>
-            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(51, 65, 85, 0.15)" strokeWidth="1" />
+            <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(78, 203, 255, 0.06)" strokeWidth="1" />
             </pattern>
+            <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(61,255,168,0.35)" />
+              <stop offset="100%" stopColor="rgba(61,255,168,0)" />
+            </radialGradient>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
 
@@ -653,22 +672,29 @@ export default function RelationshipGraph({
       </div>
 
       {/* Legend overlay */}
-      <div className="p-3 bg-slate-950/90 border-t border-slate-800 text-[10px] font-mono grid grid-cols-2 md:grid-cols-4 gap-2 text-slate-400">
+      <div
+        className="px-3 py-2 text-[9px] font-mono grid grid-cols-2 md:grid-cols-4 gap-2 shrink-0"
+        style={{
+          background: "var(--bg-elevated)",
+          borderTop: "1px solid var(--border)",
+          color: "var(--text-muted)",
+        }}
+      >
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-500" />
-          <span>Original Node</span>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#064e3b", border: "1px solid #3dffa8" }} />
+          <span>Original seed</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-sky-950 border border-sky-600" />
-          <span>Quote/Reply Node</span>
+          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "#0c4a6e", border: "1px solid #4ecbff" }} />
+          <span>Quote / reply</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-5 h-0.5 border-t-2 border-dashed border-emerald-500" />
-          <span>Quote relation</span>
+          <span className="w-5 h-0 border-t border-dashed" style={{ borderColor: "#3dffa8" }} />
+          <span>Quote edge</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-5 h-0.5 border-t-2 border-dotted border-amber-500" />
-          <span>Screenshot relation</span>
+          <span className="w-5 h-0 border-t border-dotted" style={{ borderColor: "#ffc857" }} />
+          <span>Screenshot edge</span>
         </div>
       </div>
     </div>

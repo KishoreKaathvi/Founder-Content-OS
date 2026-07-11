@@ -1,6 +1,56 @@
-> **Document status:** X - Capture & Context Pipeline (Draft v1) · Owner: (you) · Last updated: 2026-07-11
-> **Companion doc:** `X - Knowledge Signal Engine` (discovery/provenance). This is the second stage — capture, enrichment, and delivery.
-> **Reading order:** `00-overview` → `01-architecture` → `02-reality-and-mvp` → `03-build-spec` → `04-processing-rules` → `05-roadmap`
+> **Document status:** X - Capture & Context Pipeline (Draft v1.2 — repo-ready) · Owner: (you) · Last updated: 2026-07-11
+> **Companion doc:** `X - Knowledge Signal Engine 10Jul26.md` (discovery/provenance). This is the second stage — capture, enrichment, and delivery.
+> **Repo README:** `README.md` (how to run the KSE lab that coexists in this monorepo)
+> **Reading order:** `00-overview` → **`00b-codebase-reality`** → architecture → build-spec → roadmap
+> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26
+
+---
+
+## 0b. Codebase reality (2026-07-11 audit) ⚠️
+
+### Status: design-only — **zero Capture code in the monorepo**
+
+A full audit of `X-KES/` shows:
+
+| Expected (this doc) | In repo? |
+|---------------------|----------|
+| Capturer (bookmarks/likes poll) | ❌ |
+| Media extractor / Supabase Storage | ❌ |
+| Classifier / taxonomy tags | ❌ |
+| Archivist schema (`captured_items`, …) | ❌ |
+| Markdown context exporter | ❌ |
+| Railway/cron job for this pipeline | ❌ |
+
+What *is* in the monorepo is the **Knowledge Signal Engine prototype only** (Express + React + Gemini simulation of social cascades, provenance ranking, dashboard, JSON/TXT/PDF export). See companion SSOT section **`00b-codebase-reality`** and `HANDOFF.md`.
+
+### Implications (do not silently merge systems)
+
+1. **This pipeline is still the right second system.** KSE went deep on discovery UI/algorithms; it did **not** implement bookmark → media → tag → store. That gap is exactly why this doc exists.
+2. **Do not bolt Capture stages onto `server.ts` as random routes.** KSE is pull/on-demand and LLM-heavy in the lab; Capture is push/hourly and owned-read cheap. Shared Supabase project later is fine; shared process is not required at MVP.
+3. **Stack alignment:** this doc already chooses **Node.js/TypeScript** — that matches the live monorepo language. Prefer a separate package or service (e.g. `packages/capture/` or `capture/`) under the same org, not a Python fork.
+4. **What KSE already proves that Capture can reuse later (ideas only, not code copy-paste):**
+   - Typed TypeScript contracts and paste-ready export discipline (TXT/JSON/PDF patterns)
+   - Config-over-code weight/threshold mindset
+   - Honest fallback labels (`is_fallback`) when upstream data is degraded
+   - **Not reusable as-is:** Gemini post simulation, provenance graph, relationship dashboard — wrong job for Capture
+5. **Nothing from the KSE prototype invalidates Phase 0–1 of this doc.** Phase 0 (real bookmark mix + cost) remains the first Capture task. No Capture feature was “accidentally” delivered by AI Studio.
+
+### Cross-system seams (keep in schema even before both run)
+
+When both systems share storage later:
+
+| Seam | Purpose |
+|------|---------|
+| `source_id` / X post id uniqueness | Dedup Capture vs KSE-surfaced posts |
+| `also_in_signal_engine` (or equivalent flag) | Provenance note in Capture exports |
+| Fixed taxonomy tags on Capture side | Orthogonal to KSE score vectors |
+
+### Immediate Capture next actions (unchanged intent, clearer context)
+
+1. Phase 0 spike on **owned-read bookmarks/likes** — not on the KSE Gemini lab.
+2. Stand up Supabase tables from §6.2.
+3. Build Phase 1 only (capture → normalize → media → classify → archive → export).
+4. Leave KSE server alone except optional shared types package if/when both are real.
 
 ---
 
@@ -373,10 +423,14 @@ Latency: batch, hourly — no item needs to be processed in under an hour, so th
 
 ## 11. Immediate next actions
 
+> **Codebase note:** KSE prototype work in this monorepo does **not** advance Capture. Start from zero for this system (`00b`).
+
 1. Run the Phase 0 spike — pull real bookmark history, get real item-type mix and real cost numbers.
 2. Stand up the `captured_items` + related tables in Supabase.
-3. Build Phase 1 only (capture → normalize → media → classify → archive → export). Stop there — no thread reconstruction, no repo scoring, no video transcription until Phase 1 is proven in daily use.
-4. Run it for a week against your real routine; check C1–C2 hold before touching Phase 2.
+3. Scaffold Capture as a **separate** Node/TS package or service (not new routes inside KSE `server.ts` pipeline).
+4. Build Phase 1 only (capture → normalize → media → classify → archive → export). Stop there — no thread reconstruction, no repo scoring, no video transcription until Phase 1 is proven in daily use.
+5. Run it for a week against your real routine; check C1–C2 hold before touching Phase 2.
+6. Only after both systems persist to a shared Supabase project, wire dedup flag `also_in_signal_engine` (Phase 3).
 
 ---
 

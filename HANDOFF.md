@@ -1,51 +1,48 @@
-# Knowledge Signal Engine (KSE) - Deep Technical & Architectural Handoff
+# Knowledge Signal Engine (KSE) — Technical Handoff
 
-This document details the deep technical architecture, mathematical formulations, processing pipeline, API contracts, and user interface mechanics of the **Knowledge Signal Engine (KSE)**. KSE is an advanced cyber-forensic analytics platform designed to ingest unstructured social streams, model chronological information cascades, filter malicious or low-signal noise, and resolve network provenance to identify the primary authors/sources of trending claims.
+Deep notes on the **prototype** pipeline (math, API, recovery). For product truth and MVP constraints, prefer:
+
+- `README.md` — runbook + scope
+- `X - Knowledge Signal Engine 10Jul26.md` — SSOT (including **§0b codebase reality**)
+- `X_-_Capture_and_Context_Pipeline_11Jul26.md` — companion system (not in this repo’s code)
+
+**Claim discipline:** Stage ① is Gemini simulation or local fallback — **not** live X API.
 
 ---
 
 ## 1. System Architecture & Component Mapping
 
-The system follows a decoupling of state and analytical execution, utilizing an Express.js backend as a deterministic state machine and a React-Vite client as an interactive analytical workstation.
+Express backend owns the pipeline; React client is a multi-view analytical workstation.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        REACT CLIENT (PORT 3000)                        │
-│                                                                        │
-│  ┌──────────────────────┐   ┌──────────────────────┐  ┌─────────────┐  │
-│  │     Control Rails    │   │  Relationship Graph  │  │   Export    │  │
-│  │ (Weights & Time bounds)│  │ (SVG Node-Link Force)│  │ TXT & JSON  │  │
-│  └──────────┬───────────┘   └──────────▲───────────┘  └──────▲──────┘  │
-└─────────────┼──────────────────────────┼─────────────────────┼─────────┘
-              │ POST /recalculate        │                     │
-              ▼                          │                     │
-┌────────────────────────────────────────┼─────────────────────┴─────────┐
-│                       EXPRESS BACKEND (PORT 3000)                      │
-│                                                                        │
-│  ┌─────────────────────────┐  ┌─────────────────────────────────────┐  │
-│  │      Stage ① Ingestion  │  │       Stage ② Noise Filtering       │  │
-│  │   (Gemini or Fallback)  │  │     (Regexes + Metadata Density)    │  │
-│  └────────────┬────────────┘  └──────────────────▲──────────────────┘  │
-│               │                                  │                     │
-│  ┌────────────▼────────────┐  ┌──────────────────┴──────────────────┐  │
-│  │ Stage ③ Graph Resolution │  │ Stage ④ Multi-Signal Provenance     │  │
-│  │ (BFS/DFS Disjoint Sets) │  │  (Heuristic Scoring & Penalties)    │  │
-│  └────────────┬────────────┘  └──────────────────▲──────────────────┘  │
-│               │                                  │                     │
-│  ┌────────────▼────────────┐  ┌──────────────────┴──────────────────┐  │
-│  │ Stage ⑤ Search Grounding│  │ Stage ⑥ Analytical Verification     │  │
-│  │   (Google Search Tool)  │  │      (Final Rank Presentation)      │  │
-│  └─────────────────────────┘  └─────────────────────────────────────┘  │
+│                     REACT CLIENT (PORT 3000)                           │
+│  AppShell (collapsible nav) · Light/Dark/System · exports              │
+│  Views: Command | Sources | Cascade | Noise | Verify | Weights | Watch │
+│  POST /api/kse/run  ·  POST /api/kse/recalculate                       │
+└───────────────────────────────┬────────────────────────────────────────┘
+                                │
+┌───────────────────────────────▼────────────────────────────────────────┐
+│                     EXPRESS BACKEND (server.ts)                        │
+│  ① Ingestion (Gemini JSON sim | fallback) → ② Noise → ③ Graph (DSU)    │
+│  → ④ Provenance + multi-signal rank → ⑤ Report (Gemini) → Grounding  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Core Source Code Directories:
-- **`server.ts`**: Express backend containing custom simulated ingestion engines, noise filters, disjoint set graph resolution algorithms, provenance rank scorers, and robust Gemini-3 API controllers.
-- **`src/types.ts`**: Unified TypeScript specifications ensuring strict type safety between the server response payloads and client-side data consumers.
-- **`src/App.tsx`**: Main dashboard orchestrator controlling user flows, slider state bounds, export compilers, active selections, and state overrides.
-- **`src/components/Sidebar.tsx`**: Left configuration workspace containing weight parameters, instant-update triggers, and the temporal scale bounds controller.
-- **`src/components/RelationshipGraph.tsx`**: Custom SVG node-link force-directed graph rendering real-time edge interactions, parentage traces, and screenshot loops.
-- **`src/components/OriginalCard.tsx`**: Custom, highly polished card rendering original source diagnostics, evidence badging, sentiment indices, and clipboard actions.
+### Core source paths (current)
+
+| Path | Role |
+|------|------|
+| `server.ts` | Pipeline, Gemini, fallback, APIs |
+| `src/types.ts` | Shared contracts |
+| `src/hooks/useKseAnalysis.ts` | Client state, run/export, filters |
+| `src/layout/AppShell.tsx` | Nav + top bar |
+| `src/views/*` | One concern per view |
+| `src/components/RelationshipGraph.tsx` | Force graph |
+| `src/components/SourceCard.tsx` | Ranked source cards |
+| `src/components/viz/DashCharts.tsx` | Donuts, funnel, sparklines |
+
+> **Note:** Legacy one-page `Sidebar.tsx` / `OriginalCard.tsx` may still exist in the tree; the active shell uses **AppShell + views + SourceCard**.
 
 ---
 

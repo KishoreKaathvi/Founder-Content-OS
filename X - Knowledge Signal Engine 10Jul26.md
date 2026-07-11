@@ -1,5 +1,117 @@
-> **Document status:** X - Knowledge Signal Engine (Draft v1) · Owner: (you) · Last updated: 2026-07-10
-> **Reading order:** `00-overview` → `01-architecture` → `02-reality-and-mvp` → `03-build-spec` → `04-ranking-and-provenance` → `05-roadmap`
+> **Document status:** X - Knowledge Signal Engine (Draft v1.2 — repo-ready) · Owner: (you) · Last updated: 2026-07-11
+> **Reading order:** `README.md` → **`00b-codebase-reality`** → `00-overview` → `01-architecture` → `02-reality-and-mvp` → `03-build-spec` → `04-ranking-and-provenance` → `05-roadmap`
+> **Companion:** `X_-_Capture_and_Context_Pipeline_11Jul26.md` (push-shaped capture; not built in this repo yet)
+> **Handoff detail:** `HANDOFF.md` (pipeline math/API; UI paths may lag — trust §0b + `src/views/` for layout)
+> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26
+
+---
+
+## 0b. Codebase reality (what AI Studio / Gemini actually built) ⚠️ READ THIS
+
+This section was added after auditing the live repo against this SSOT. **The design layers below still define product truth.** The codebase is a **working algorithm + UI prototype** that went further in *product surface* than Phase 1 of this doc, while remaining **behind** on the binding constraint: **real X data access**.
+
+### What exists in the repo today
+
+| Area | Status | Location |
+|------|--------|----------|
+| Full-stack app | ✅ Runs | Express + Vite React on port 3000 (`server.ts`, `src/`) |
+| Topic → analysis run | ✅ | `POST /api/kse/run` |
+| Instant weight re-rank (no LLM cost) | ✅ | `POST /api/kse/recalculate` + in-memory `resultCache` |
+| Noise filter | ✅ | Regex spam + high hashtag/mention + low-authority heuristic |
+| Graph edges | ✅ partial | `quote`, `reply`, `same_url`, `same_image_hash`, `semantic_sim` (Jaccard keyword overlap > 0.45) |
+| Connected components | ✅ | Disjoint-set / union-find in `computeConnectedComponents` |
+| Provenance `source_fitness` | ✅ | Matches `04` formula with default weights |
+| Multi-signal score vector | ✅ | originality / authority / influence / evidence / freshness; `community_validation: null` |
+| Top ≤10 originals | ✅ | Presentation-score sort |
+| Gemini report step | ✅ | Topic summary + `why_it_matters` + `current_relevance` |
+| Google Search grounding | ✅ best-effort | `tools: [{ googleSearch: {} }]` → `verification_grounding` |
+| Offline fallback dataset | ✅ | `createFallbackDataset(topic)` when no key / 429 / quota |
+| Model retry ladder | ✅ | `gemini-3.1-flash-lite` → `gemini-3.5-flash` → `gemini-flash-latest` + exp backoff + 5-min quota circuit-breaker |
+| Multi-view UI | ✅ **ahead of SSOT MVP** | `AppShell` + Command/Sources/Cascade/Noise/Verify/Weights/Watchlist |
+| Theme | ✅ | Light / Dark / System (no DaisyUI) |
+| Export | ✅ | JSON, TXT report, PDF (html2canvas + jsPDF) |
+| Capture pipeline | ❌ | Spec only — companion SSOT |
+| Deep-link share | ✅ | `?q=&node=&tMin=&tMax=` |
+| Manual claim flags | ✅ (UI) | Verified Fact / Misinformation / Satire → local score overrides (localStorage) |
+| Topic alerts | ✅ (UI only) | localStorage list — **not** a real notification backend |
+| Theme | ✅ | light / dark / system |
+| Keyboard UX | ✅ | Ctrl/Cmd+K search, arrows traverse originals, Esc clears |
+| Cluster / node sentiment badge | ✅ cosmetic | Keyword heuristic (+amazing/−fake style), not a product criterion |
+| Sparkline volatility on cards | ✅ cosmetic | Deterministic hash of post id — **not** real engagement time-series |
+| Real X API collection | ❌ **not built** | Stage ① is **Gemini simulation**, not Tweepy / X search |
+| Real embeddings / Qdrant | ❌ | Semantic edge = Jaccard on tokens > 3 chars |
+| Real pHash on images | ❌ | `media_hashes` are simulated strings from the LLM or fallback |
+| MinHash/LSH near-dup collapse | ❌ | Not a separate stage; high Jaccard edges only |
+| `shared_entity` / `shared_hashtag` / `time_proximity` edges | ⚠️ typed only | Present in `src/types.ts`, **not** emitted in `server.ts` edge builder |
+| Python stack (Tweepy, NetworkX, SQLite…) | ❌ not used | Prototype is **Node/TypeScript + React** |
+| Capture & Context Pipeline | ❌ not in repo | Separate system; zero code here |
+
+### Critical honesty (do not re-litigate)
+
+1. **This is not yet a production provenance engine on live X data.** It proves the *graph → source_fitness → score vector → report* loop on **synthetic or LLM-simulated cascades**. Shipping language must not claim live X provenance until Collector uses official X API (or licensed data) and S1–S2 are measured on real posts.
+2. **UI ahead of data is intentional for this prototype, not a rewrite of the MVP boundary.** The original SSOT said “no dashboard before S1/S2.” The AI Studio path built a full workstation first so the ranking math is inspectable. That is fine as a **lab**. Production still gates on `02` (data access + rater fixtures).
+3. **Demo-path quirks that must not become product truth:**
+   - If noise filter finds zero spam, the server **forces** two lowest-like posts into `noise_candidates` so the UI always has a Noise tab demo. Real MVP must not invent noise.
+   - Influence uses **incoming edge count / component size**, not full directed reachability / cascade trees.
+   - Evidence uses verified + cluster size > 3 + github/arxiv URL heuristics — not a full Verifier against independent sources (grounding is topic-level, not per-original).
+
+### Implemented stack (prototype) vs design stack (SSOT §03)
+
+| Concern | Design SSOT (Python path) | **Shipped prototype (this repo)** |
+|---------|---------------------------|-----------------------------------|
+| Language | Python 3.11+ | **TypeScript (Node + React 19)** |
+| Runtime | Prefect/cron scripts | **Express + Vite** (`tsx server.ts`) |
+| Collection | Tweepy / X API | **Gemini structured JSON simulation** (+ local fallback) |
+| LLM | Any API at report step only | **@google/genai** — simulation + report + grounding |
+| Graph | NetworkX → igraph | **In-memory edges + DSU components** |
+| Vectors | Sentence-Transformers + Qdrant | **None** (Jaccard proxy) |
+| Storage | SQLite → Postgres | **In-memory Map cache only** (lost on restart) |
+| UI | Deferred past Phase 1 | **Full analytical dashboard** |
+| Config | `config/` files | **Defaults in `server.ts` + Sidebar sliders** |
+
+**Stack decision going forward:** keep the **TypeScript monorepo** as the active implementation path unless a deliberate rewrite is approved. The Python stack in nested `03` remains a *reference design*, not the current code contract. Source-agnostic types in `src/types.ts` already mirror the SSOT dataclasses closely enough to preserve that principle.
+
+### Default weights (live code)
+
+```
+provenance:  w_time=0.45, w_auth=0.25, w_infl=0.20, w_deriv=0.35
+presentation: α=0.35, β=0.20, γ=0.25, δ=0.15, ε=0.05, ζ=0.0
+```
+
+### API contracts (implemented)
+
+- `POST /api/kse/run` — body: `{ topic, provenanceWeights?, presentationWeights? }` → full `KSERunResult`
+- `POST /api/kse/recalculate` — same body; reuses cached items/edges; re-runs only provenance + ranking; preserves Gemini explanations when possible
+
+### UI product surface already built (for product/roadmap accounting)
+
+These are **real code**, not vision slides — treat them as Phase-4-ish surface that landed early:
+
+- Relationship graph (SVG force layout, pan/zoom, edge kinds)
+- Original cards with score bars, evidence badges, derivatives, flags
+- Pipeline hub tabs (summary, graph, originals, noise, grounding)
+- Time-window filter (client-side)
+- Export JSON / TXT / multi-page PDF with graph snapshot
+- Share deep-link, theme toggle, topic alerts (local), header search
+
+### What this means for phases
+
+| Phase | Doc intent | Prototype status |
+|-------|------------|------------------|
+| Phase 0 spike (real X cost/latency) | First | **Not done** — still the real first production task |
+| Phase 1 vertical slice | Thin report on real data | **Logic + UI exist on simulated data**; not wired to X |
+| Phase 2 harden provenance | Rater loop | Algorithms present; **no labeled fixtures / evaluation harness** |
+| Phase 3+ data-unlocked | Gated | Unchanged — still blocked on real graph density |
+| Capture pipeline | Companion system | **Not started** (see companion SSOT) |
+
+### Immediate next actions (codebase-aware, supersedes old “Python first” list)
+
+1. **Do not expand UI further** until Stage ① is either (a) official X collection with budget, or (b) explicitly frozen as “simulator-only lab.”
+2. **Phase 0:** real collection spike at chosen X tier; fill cost table in `02`; reject scraping paths.
+3. **Replace Gemini simulation with Collector** behind the same `ContentItem` / `Author` / `Edge` types already in `src/types.ts`.
+4. **Remove or gate demo hacks** (forced noise candidates) behind a `DEMO_MODE` flag before any production claim.
+5. **Add rater fixtures + degraded-edge tests** against `runProvenancePipeline` (pure function already isolated).
+6. **Capture pipeline stays separate** — do not fold bookmark/media work into this server.
 
 ---
 
@@ -337,19 +449,21 @@ This is the crux. Map capability directly to data access so scope decisions are 
 
 ### In scope (MVP)
 - **One topic/domain** at a time (e.g. "AI Coding"), operator-supplied.
-- **Batch, not streaming.** Run on demand or on a schedule; no live dashboard.
+- **Batch, not streaming.** Run on demand or on a schedule.
 - Retrieval → noise filter → near-dup removal → graph (cheap edges) → provenance (cheap signals) → multi-signal ranking → ≤10-post report with "why."
 - Success measured against `00` §3 (S1–S4).
+- **UI note (2026-07-11):** an interactive dashboard already exists in the monorepo as a **lab workstation** on simulated data (`00b`). That does **not** change the product gate: S1–S4 on **real X data** still define MVP done. The UI is allowed to ship with production MVP once data is real; it is not a substitute for real collection.
 
 ### Out of scope (MVP) — and *why each is deferred*
 | Deferred | Why |
 |----------|-----|
 | Multi-source ingestion | X provenance must work first; abstraction kept (`01` §6) but no second source built. |
-| Real-time / streaming dashboard | Needs infra + continuous API spend before core value is proven. |
-| Full 12-section dashboard | Each widget presumes data (cascades, communities, historical archive) we won't have. |
+| Real-time / streaming dashboard | Needs continuous API spend before core value is proven. (Batch UI already exists in lab.) |
+| Full 12-section vision dashboard | Each extra widget presumes data (cascades, communities, historical archive) we won't have. |
 | Cascade / Hawkes modeling | Needs full RT graph → gated data (§3). |
 | Community detection | Needs author-interaction graph at scale → gated data (§3). |
 | Custom-trained models | Off-the-shelf embeddings suffice at MVP; training is premature optimization. |
+| **Gemini simulation as production input** | Lab only. Production Collector must be official X API or licensed data (`02` §2). |
 
 **Why draw the line here and not further out:** this boundary encloses exactly the set of capabilities buildable on *cheap, legitimate* data. Everything outside it depends on data we've shown (§3) to be gated or expensive. Committing to those before the funded data access exists would be designing around data we don't have — the exact failure mode §1 warns against.
 
@@ -397,9 +511,28 @@ content: |-
 
 **Why "with rejections":** the source discussion listed many repos and explicitly said *"ignore half the list."* Recording *why* something was rejected prevents re-adding it later.
 
-| Concern | Chosen | Rejected (and why) |
-|---------|--------|--------------------|
-| Language | **Python 3.11+** | — ecosystem for NLP/graph is unmatched here. |
+### 1.0 Active implementation path (updated 2026-07-11)
+
+The **live repo** is a **TypeScript** full-stack prototype (AI Studio / Gemini), not the Python path below. See **`00b-codebase-reality`**. Going forward:
+
+| Concern | **Active (this monorepo)** | Notes |
+|---------|----------------------------|-------|
+| Language / app | **TypeScript — Express + React/Vite** | `server.ts`, `src/` |
+| LLM | **Google Gemini** via `@google/genai` | Simulation (lab only), report, Search grounding |
+| Graph / provenance | **In-memory** edges + DSU + `runProvenancePipeline` | No Neo4j; formulas aligned with `04` |
+| Semantic similarity (current) | **Jaccard keyword overlap** (threshold 0.45) | Placeholder until embeddings justified by real volume |
+| Storage (current) | **In-memory cache** | Must become Postgres/SQLite when runs must persist |
+| Collection (target) | **Official X API client** (thin `fetch` or Tweepy-equivalent in Node) | Replace Gemini simulation; still **reject** snscrape / Twikit |
+| Image hashing (target) | Real pHash when media URLs are real | Today: simulated `media_hashes` strings only |
+| UI | **Shipped early** (dashboard) | Lab workstation; production claims still need real data + S1–S2 |
+
+### 1.1 Reference design (Python path — not current code)
+
+Kept for historical/design comparison. **Do not implement a second parallel stack** unless explicitly decided.
+
+| Concern | Chosen (reference) | Rejected (and why) |
+|---------|--------------------|--------------------|
+| Language | **Python 3.11+** | — NLP/graph ecosystem; *superseded by active TS monorepo* |
 | X collection | **Tweepy** (official X API client) | `snscrape` — non-functional vs. X today (`02`). `Twikit`/browser automation — **ToS violation** (`02`). |
 | Embeddings | **Sentence-Transformers** (`bge-*` or `e5-*`; consider `BERTweet` for tweet-native text) | Custom training — premature (`02` §4). |
 | Vector store | **Qdrant** (self-hostable, OSS) | Pinecone — managed/proprietary; skip for OSS stack. |
@@ -408,9 +541,9 @@ content: |-
 | Image hashing | **imagehash** (pHash/dHash) | — needed for screenshot detection edge. |
 | Orchestration | Plain Python + a task runner (e.g. **Prefect** or cron) | Heavy streaming infra (Kafka etc.) — out of scope (batch, `02`). |
 | Storage | **SQLite** (MVP) → Postgres (later) | — SQLite is enough for single-topic batch. |
-| LLM (report step) | Any capable model via API | — used only at stage ⑨. |
+| LLM (report step) | Any capable model via API | — used only at stage ⑨ in pure design; prototype also uses LLM for simulation. |
 
-**Why NetworkX first, igraph later:** NetworkX is the fastest thing to *think in* and debug; igraph is 10–100× faster but clunkier. Provenance logic is the risky part — prototype it in NetworkX where it's legible, port to igraph only when graph size demands it.
+**Why not dual-stack:** provenance math is already portable in TS; rewriting into Python would duplicate `04` without unlocking data access.
 
 ---
 
@@ -547,26 +680,43 @@ originals:                    # ≤ 10
 
 ## 5. Repository layout
 
+### 5.0 Actual monorepo layout (2026-07-11)
+
 ```
-metrics/
-├─ docs/                     # this documentation set
-├─ src/kse/
-│  ├─ collect/               # Collector (Tweepy)
-│  ├─ normalize/             # extractors: url, media hash, entities, embed
-│  ├─ filter/                # noise filter
-│  ├─ dedup/                 # MinHash/LSH + rapidfuzz
-│  ├─ graph/                 # NetworkX builder + edge extractors
-│  ├─ provenance/            # source detector (04)
-│  ├─ rank/                  # multi-signal scorer (04)
-│  ├─ verify/                # cross-verification
-│  ├─ report/                # LLM reporter
-│  └─ model.py               # dataclasses from §2
-├─ config/                   # thresholds, weights, topic specs
-├─ tests/                    # per-role tests + rater fixtures
-└─ scripts/spike_collect.py  # 02 §5 cost/latency spike — FIRST task
+X-KES/
+├─ X - Knowledge Signal Engine 10Jul26.md   # this SSOT
+├─ X_-_Capture_and_Context_Pipeline_11Jul26.md
+├─ HANDOFF.md                 # deep tech handoff for prototype
+├─ server.ts                  # Express API + pipeline + Gemini + fallback
+├─ src/
+│  ├─ types.ts                # ContentItem, Edge, ScoreVector, KSERunResult…
+│  ├─ App.tsx                 # dashboard orchestrator
+│  ├─ components/
+│  │  ├─ Sidebar.tsx          # search, weight sliders, alerts, time window
+│  │  ├─ RelationshipGraph.tsx
+│  │  ├─ OriginalCard.tsx
+│  │  └─ Tooltip.tsx
+│  ├─ main.tsx
+│  └─ index.css
+├─ package.json               # npm run dev → tsx server.ts
+├─ vite.config.ts
+└─ .env.example               # GEMINI_API_KEY, APP_URL
 ```
 
-**Why `spike_collect.py` is called out as first:** per `02` §5, every estimate is sand until we measure real collection cost/latency at the chosen tier. This script produces that number.
+**Still missing (must add for production path):** `collect/` (real X), persistent storage, `config/` files (weights currently hardcoded + UI), `tests/` + rater fixtures, `scripts/spike_collect.*` (Node or Python) for `02` §5.
+
+### 5.1 Reference Python layout (not current)
+
+```
+metrics/
+├─ docs/
+├─ src/kse/   # collect, normalize, filter, dedup, graph, provenance, rank, verify, report
+├─ config/
+├─ tests/
+└─ scripts/spike_collect.py
+```
+
+**Why the collection spike is still first:** per `02` §5, every cost estimate is sand until real X collection is measured. Gemini simulation cost ≠ X search cost.
 
 
 description: Buildable MVP spec — stack (chosen/rejected), source-agnostic data model, components, output schema, repo layout
@@ -1047,13 +1197,17 @@ Only after Phases 1–3 are real:
 
 ## 10. Immediate next actions (after reading this doc set)
 
-1. **Run the collection spike** (`scripts/spike_collect.py`) at the intended API tier; fill `02` §5.
-2. **Pick the pilot topic** and build the first rater fixture (originals + bait).
-3. **Implement Phase 1 in the build order in §4.1** — stop at the report schema; no dashboard.
-4. **Measure S2 under full and degraded edges** before writing any launch copy.
-5. **Only then** decide Phase 2 hardening vs. formal fallback labeling.
+> **Codebase-aware (2026-07-11):** the algorithm lab + dashboard already exist on simulated data. Do not re-build the UI from zero. See also `00b`.
 
-**Why this sequence is non-negotiable:** it is the only path that keeps the architecture (`01`), the reality constraint (`02`), the buildable spec (`03`), and the ranking contract (`04`) aligned with what the product is allowed to claim.
+1. **Run the collection spike** at the intended X API tier (`scripts/spike_collect.ts` or equivalent); fill `02` §5. *Gemini sim cost does not count.*
+2. **Pick the pilot topic** and build the first rater fixture (originals + bait) against *real* posts when available; until then, freeze fixtures from the fallback dataset only for unit tests of `runProvenancePipeline`.
+3. **Wire Collector into the existing pipeline** — replace Stage ① simulation; keep graph/provenance/rank/report/UI.
+4. **Gate demo hacks** (forced noise injection) behind `DEMO_MODE`.
+5. **Measure S2 under full and degraded edges** before writing any launch copy.
+6. **Only then** decide Phase 2 hardening vs. formal fallback labeling ("high-signal finder").
+7. **Do not start Capture Pipeline code inside KSE server** — keep systems separate (companion SSOT).
+
+**Why this sequence is non-negotiable:** it is the only path that keeps the architecture (`01`), the reality constraint (`02`), the buildable spec (`03`), and the ranking contract (`04`) aligned with what the product is allowed to claim — without discarding the working prototype.
 
 ---
 
@@ -1084,5 +1238,20 @@ If a proposed task is not required by the IN/PIPE/OUT/WIN lines and is listed un
 
 ---
 
+## Appendix C — Prototype vs production (one-page)
 
-description: Capability-gated roadmap — Phase 0 spike through vision layer, exit gates, immediate next actions
+```
+PROTOTYPE (shipped in this repo, Gemini lab):
+  IN:  topic string → Gemini simulates 15–20 posts OR local fallback cascade
+  PIPE: noise → edges (quote/reply/url/hash/Jaccard) → DSU → source_fitness → scores → Gemini report → Search grounding
+  OUT: dashboard + JSON/TXT/PDF + ≤10 originals + noise tab + weight sliders
+  CLAIM: "algorithm + UX lab" — NOT live X provenance
+
+PRODUCTION (not yet — still the real MVP):
+  IN:  official X search (budget-capped) for one topic
+  PIPE: same types + formulas; real media hashes; real embeddings optional; no forced noise
+  OUT: same schema; S1–S4 measured on rater fixtures
+  CLAIM: provenance engine OR honest high-signal finder per S2 outcome
+```
+
+---
