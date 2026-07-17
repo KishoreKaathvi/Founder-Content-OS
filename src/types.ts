@@ -147,3 +147,97 @@ export interface AlertTopic {
   matchCount: number;
 }
 
+/* ── Founder Content OS contracts ─────────────────────────────── */
+
+export type CampaignObjective = "AWARENESS" | "TRUST" | "LEADS";
+
+export type ContentChannel =
+  | "X"
+  | "LINKEDIN"
+  | "INSTAGRAM_POST"
+  | "INSTAGRAM_CAROUSEL"
+  | "INSTAGRAM_REEL"
+  | "WHATSAPP"
+  | "FACEBOOK"
+  | "YOUTUBE_SHORT"
+  | "YOUTUBE_VIDEO";
+
+export type ContentFormat = "TEXT" | "CAROUSEL" | "SCRIPT" | "CREATIVE_BRIEF";
+
+export type AssetStatus = "DRAFT" | "REVIEWED" | "APPROVED" | "EXPORTED";
+
+export type QualityRecommendation = "REVISE" | "APPROVE";
+
+export interface FounderInsight {
+  id: string;
+  sourceOriginalId: string;
+  topic: string;
+  claim: string;
+  whyItMatters: string;
+  evidenceLinks: { title: string; uri: string }[];
+  sourceUrl?: string;
+  authority: number;
+  originality: number;
+  freshness: number;
+  audience: "INDIAN_ENGLISH";
+  /** True when the parent KSE run used simulated/fallback data */
+  isSimulatedSource?: boolean;
+  authorHandle?: string;
+  currentRelevance?: string;
+}
+
+export interface CampaignBrief {
+  id: string;
+  insightId: string;
+  objective: CampaignObjective;
+  audience: string;
+  coreAngle: string;
+  proofPoints: string[];
+  contentPillars: string[];
+  callToAction: string;
+  voiceRules: string[];
+}
+
+export interface ChannelAsset {
+  id: string;
+  campaignId: string;
+  channel: ContentChannel;
+  format: ContentFormat;
+  draft: string;
+  status: AssetStatus;
+  review?: ContentQualityReview;
+}
+
+export interface ContentQualityReview {
+  assetId: string;
+  evidenceScore: number;
+  voiceScore: number;
+  platformFitScore: number;
+  clarityScore: number;
+  risks: string[];
+  recommendation: QualityRecommendation;
+}
+
+export interface ContentCampaign {
+  id: string;
+  brief: CampaignBrief;
+  assets: ChannelAsset[];
+  reviews: ContentQualityReview[];
+  is_fallback?: boolean;
+  createdAt: string;
+}
+
+export interface CreateCampaignRequest {
+  insight: FounderInsight;
+  objective: CampaignObjective;
+  audience?: string;
+  founderContext?: string;
+  channels?: ContentChannel[];
+}
+
+export interface ApiErrorBody {
+  error: string;
+  code: "VALIDATION" | "INTERNAL";
+  details?: string[];
+}
+

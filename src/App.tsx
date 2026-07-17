@@ -14,6 +14,7 @@ import NoiseView from "./views/NoiseView";
 import VerifyView from "./views/VerifyView";
 import TuningView from "./views/TuningView";
 import AlertsView from "./views/AlertsView";
+import ContentStudioView from "./views/ContentStudioView";
 
 function isPortalRoute(): boolean {
   if (typeof window === "undefined") return false;
@@ -57,6 +58,7 @@ function PortalApp({ onExitPortal }: { onExitPortal: () => void }) {
       {api.activeView === "noise" && <NoiseView api={api} />}
       {api.activeView === "verify" && <VerifyView api={api} />}
       {api.activeView === "tuning" && <TuningView api={api} />}
+      {api.activeView === "content" && <ContentStudioView api={api} />}
       {api.activeView === "alerts" && <AlertsView api={api} />}
     </AppShell>
   );

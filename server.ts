@@ -18,6 +18,9 @@ import {
   PresentationWeights, 
   KSERunResult 
 } from "./src/types";
+import { validateCampaignRequest } from "./src/content/validateCampaignRequest";
+import { briefPrompt } from "./src/content/generateBrief";
+import { buildContentCampaign } from "./src/content/buildCampaign";
 
 // Load environment variables
 dotenv.config();
@@ -916,6 +919,93 @@ async function startServer() {
     } catch (error: any) {
       console.error("[KSE Server Error]", error);
       res.status(500).json({ error: error.message || "An unexpected error occurred." });
+    }
+  });
+
+  // --- API ROUTE: FOUNDER CONTENT OS — campaign brief + multi-channel assets ---
+  app.post("/api/content/campaigns", async (req, res) => {
+    try {
+      const parsed = validateCampaignRequest(req.body);
+      if (parsed.ok === false) {
+        return res.status(400).json(parsed.error);
+      }
+
+      const { insight, objective, audience, founderContext, channels } =
+        parsed.value;
+
+      let modelBrief:
+        | {
+            coreAngle?: string;
+            proofPoints?: string[];
+            contentPillars?: string[];
+            callToAction?: string;
+            voiceRules?: string[];
+          }
+        | undefined;
+      let usedFallback = !ai;
+
+      const apiIsExhausted = isQuotaExceeded && Date.now() < quotaExceededResetTime;
+
+      if (ai && !apiIsExhausted) {
+        try {
+          const response = await generateContentWithRetry({
+            contents: briefPrompt({
+              insight,
+              objective,
+              audience,
+              founderContext,
+            }),
+            config: {
+              responseMimeType: "application/json",
+            },
+          });
+          const text =
+            (response as any)?.text ||
+            (response as any)?.candidates?.[0]?.content?.parts
+              ?.map((p: any) => p.text)
+              .join("") ||
+            "";
+          if (text) {
+            const partial = cleanAndParseJSON(text);
+            modelBrief = {
+              coreAngle: partial.coreAngle,
+              proofPoints: partial.proofPoints,
+              contentPillars: partial.contentPillars,
+              callToAction: partial.callToAction,
+              voiceRules: partial.voiceRules,
+            };
+            usedFallback = false;
+          } else {
+            usedFallback = true;
+          }
+        } catch (err: any) {
+          console.warn(
+            "[Content OS] Gemini brief failed; using deterministic fallback:",
+            err?.message || err
+          );
+          usedFallback = true;
+        }
+      } else {
+        usedFallback = true;
+      }
+
+      const campaign = buildContentCampaign({
+        insight,
+        objective,
+        audience,
+        founderContext,
+        channels,
+        modelBrief,
+        is_fallback: usedFallback,
+      });
+
+      res.json(campaign);
+    } catch (error: any) {
+      console.error("[Content OS] campaign error", error);
+      res.status(500).json({
+        error: "Failed to generate content campaign",
+        code: "INTERNAL",
+      });
     }
   });
 

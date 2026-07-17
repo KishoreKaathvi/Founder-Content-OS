@@ -24,6 +24,7 @@ import {
   Moon,
   Monitor,
   Home,
+  PenLine,
 } from "lucide-react";
 import type { AppView, KseAnalysisApi } from "../hooks/useKseAnalysis";
 import Tooltip from "../components/Tooltip";
@@ -41,6 +42,7 @@ const NAV: {
   { id: "noise", label: "Noise", icon: ShieldAlert, hint: "Spam quarantine", group: "Analyze" },
   { id: "verify", label: "Verify", icon: Shield, hint: "Grounding", group: "Quality" },
   { id: "tuning", label: "Weights", icon: SlidersHorizontal, hint: "Scoring knobs", group: "Quality" },
+  { id: "content", label: "Studio", icon: PenLine, hint: "Founder content drafts", group: "Create" },
   { id: "alerts", label: "Watchlist", icon: Bell, hint: "Topic alerts", group: "Ops" },
 ];
 
@@ -83,7 +85,7 @@ export default function AppShell({
   const alertCount = api.alerts.filter((a) => a.hasNewNotification).length;
   const width = collapsed ? "var(--nav-w-collapsed)" : "var(--nav-w)";
 
-  const groups = ["Analyze", "Quality", "Ops"];
+  const groups = ["Analyze", "Quality", "Create", "Ops"];
 
   return (
     <div

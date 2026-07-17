@@ -23,7 +23,14 @@ const CAPABILITIES = [
   },
 ];
 
-function CapabilityCard({ item, index }: { item: typeof CAPABILITIES[0]; index: number }) {
+function CapabilityCard({
+  item,
+  index,
+}: {
+  item: (typeof CAPABILITIES)[number];
+  index: number;
+  key?: React.Key;
+}) {
   const { ref, isInView } = useInViewAnimation();
   const Icon = item.icon;
 

@@ -19,7 +19,8 @@ export type AppView =
   | "noise"
   | "verify"
   | "tuning"
-  | "alerts";
+  | "alerts"
+  | "content";
 
 const DEFAULT_PROVENANCE: ProvenanceWeights = {
   w_time: 0.45,
