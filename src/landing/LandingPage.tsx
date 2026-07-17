@@ -19,6 +19,7 @@ import {
   SearchCheck,
   ChevronDown,
   Radio,
+  PenLine,
 } from "lucide-react";
 
 const PIPELINE = [
@@ -90,6 +91,12 @@ const VIEWS = [
     icon: SlidersHorizontal,
     hint: "Provenance + presentation knobs; instant recalculate",
     group: "Quality",
+  },
+  {
+    id: "Studio",
+    icon: PenLine,
+    hint: "Founder Content OS — multi-platform drafts from one ranked original",
+    group: "Create",
   },
   {
     id: "Watchlist",
@@ -493,7 +500,7 @@ export default function LandingPage({ onEnter }: { onEnter: () => void }) {
             >
               {[
                 { k: "≤10", v: "ranked originals" },
-                { k: "7", v: "lab views" },
+                { k: "8", v: "lab views" },
                 { k: "5", v: "edge types" },
               ].map((s) => (
                 <div key={s.v}>
@@ -689,14 +696,16 @@ export default function LandingPage({ onEnter }: { onEnter: () => void }) {
                 Lab surface
               </p>
               <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
-                Seven views. Same run.
+                Eight views. Same run.
               </h2>
               <p
                 className="mt-3 max-w-lg text-base leading-relaxed"
                 style={{ color: "var(--text-secondary)" }}
               >
                 Matches the portal nav: Command · Sources · Cascade · Noise ·
-                Verify · Weights · Watchlist. Light / Dark / System themes.
+                Verify · Weights · Studio · Watchlist. Studio turns one ranked
+                original into multi-platform drafts (no auto-publish). Light /
+                Dark / System themes.
               </p>
             </div>
             <button

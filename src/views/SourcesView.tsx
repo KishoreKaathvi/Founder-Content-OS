@@ -1,5 +1,5 @@
 import React from "react";
-import { FileSearch } from "lucide-react";
+import { FileSearch, PenLine } from "lucide-react";
 import type { KseAnalysisApi } from "../hooks/useKseAnalysis";
 import SourceCard from "../components/SourceCard";
 
@@ -197,13 +197,31 @@ export default function SourcesView({ api }: { api: KseAnalysisApi }) {
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                className="kse-btn w-full"
-                onClick={() => api.setActiveView("graph")}
-              >
-                Highlight on graph
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  className="kse-btn w-full flex items-center justify-center gap-2"
+                  style={{
+                    background: "var(--accent-dim)",
+                    color: "var(--accent)",
+                    border: "1px solid var(--accent-border)",
+                  }}
+                  onClick={() => {
+                    api.setSelectedNodeId(selected.content_id);
+                    api.setActiveView("content");
+                  }}
+                >
+                  <PenLine size={14} />
+                  Create content in Studio
+                </button>
+                <button
+                  type="button"
+                  className="kse-btn w-full"
+                  onClick={() => api.setActiveView("graph")}
+                >
+                  Highlight on graph
+                </button>
+              </div>
             </div>
           ) : (
             <div className="kse-empty">

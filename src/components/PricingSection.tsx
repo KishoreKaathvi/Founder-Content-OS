@@ -53,8 +53,8 @@ export function PricingSection({ onEnterPortal }: PricingSectionProps) {
             </h3>
             
             <p className="mt-4 text-sm leading-relaxed text-slate-300">
-              Full multi-view portal: Command, Sources, Cascade, Noise, Verify, Weights, Watchlist.<br />
-              Runs on simulated or local fallback data — no auth required.
+              Full multi-view portal: Command, Sources, Cascade, Noise, Verify, Weights, Studio, Watchlist.<br />
+              Studio drafts multi-platform content from a ranked original. Simulated or fallback data — no auth.
             </p>
             
             <div className="mt-8 mb-8">

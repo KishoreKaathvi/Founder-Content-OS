@@ -8,6 +8,7 @@ import {
   Shield,
   Activity,
   Layers,
+  PenLine,
 } from "lucide-react";
 import type { KseAnalysisApi } from "../hooks/useKseAnalysis";
 import {
@@ -547,6 +548,12 @@ export default function OverviewView({ api }: { api: KseAnalysisApi }) {
                       icon: Shield,
                       label: "Verification",
                       meta: "grounding",
+                    },
+                    {
+                      view: "content" as const,
+                      icon: PenLine,
+                      label: "Content Studio",
+                      meta: "drafts from a signal",
                     },
                     {
                       view: "noise" as const,

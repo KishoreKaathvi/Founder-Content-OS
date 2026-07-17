@@ -1,7 +1,7 @@
 /**
  * Content Studio — select a Signal Radar original → campaign → edit/approve/export.
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   PenLine,
   Sparkles,
@@ -60,6 +60,11 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sources / Command jump desk may pre-select a signal
+  useEffect(() => {
+    if (api.selectedNodeId) setSelectedId(api.selectedNodeId);
+  }, [api.selectedNodeId]);
 
   const selectedOriginal = useMemo(
     () => originals.find((o) => o.content_id === selectedId) || null,
@@ -668,8 +673,8 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
                       className="text-[10px] pt-1"
                       style={{ color: "var(--text-muted)" }}
                     >
-                      Note: re-edit drafts for clarity; re-generate to refresh
-                      gate scores from the server.
+                      Note: edits re-score the gate live. Re-generate only if
+                      you want a new brief and channel set.
                     </p>
                   </>
                 );
