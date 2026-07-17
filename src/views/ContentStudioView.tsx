@@ -28,6 +28,7 @@ import {
   downloadTextFile,
 } from "../content/exportCampaign";
 import { ALL_CHANNELS } from "../content/generateAssets";
+import { reviewAsset } from "../content/qualityGate";
 
 const OBJECTIVES: { id: CampaignObjective; label: string; hint: string }[] = [
   { id: "AWARENESS", label: "Awareness", hint: "Memorable, shareable" },
@@ -112,34 +113,66 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
   };
 
   const updateDraft = (assetId: string, draft: string) => {
-    if (!campaign) return;
+    if (!campaign || !insight) return;
+    const nextAssets = campaign.assets.map((a) => {
+      if (a.id !== assetId) return a;
+      const updated = { ...a, draft, status: "DRAFT" as const };
+      const liveReview = reviewAsset(updated, insight, campaign.brief);
+      return { ...updated, review: liveReview };
+    });
+    const nextReviews = campaign.reviews.map((r) => {
+      const asset = nextAssets.find((a) => a.id === r.assetId);
+      return asset?.review && asset.id === assetId ? asset.review : r;
+    });
+    // Ensure review list stays in sync if asset was missing
+    const reviews =
+      nextReviews.some((r) => r.assetId === assetId)
+        ? nextReviews
+        : [
+            ...nextReviews,
+            nextAssets.find((a) => a.id === assetId)!.review!,
+          ];
     setCampaign({
       ...campaign,
-      assets: campaign.assets.map((a) =>
-        a.id === assetId ? { ...a, draft, status: "DRAFT" } : a
-      ),
+      assets: nextAssets,
+      reviews,
     });
   };
 
   const setStatus = (assetId: string, status: ChannelAsset["status"]) => {
-    if (!campaign) return;
+    if (!campaign || !insight) return;
     const asset = campaign.assets.find((a) => a.id === assetId);
-    const review =
-      asset?.review || campaign.reviews.find((r) => r.assetId === assetId);
+    if (!asset) return;
+    // Always re-score current draft before approve (stale server review is not enough)
+    const liveReview = reviewAsset(asset, insight, campaign.brief);
     if (
       (status === "APPROVED" || status === "EXPORTED") &&
-      review?.recommendation !== "APPROVE"
+      liveReview.recommendation !== "APPROVE"
     ) {
       setError(
-        "Quality gate blocked approval. Fix revision risks before approving."
+        `Quality gate blocked approval: ${liveReview.risks[0] || "revise draft first."}`
       );
+      setCampaign({
+        ...campaign,
+        assets: campaign.assets.map((a) =>
+          a.id === assetId ? { ...a, review: liveReview } : a
+        ),
+        reviews: campaign.reviews.map((r) =>
+          r.assetId === assetId ? liveReview : r
+        ),
+      });
       return;
     }
     setError(null);
     setCampaign({
       ...campaign,
       assets: campaign.assets.map((a) =>
-        a.id === assetId ? { ...a, status } : a
+        a.id === assetId
+          ? { ...a, status, review: liveReview }
+          : a
+      ),
+      reviews: campaign.reviews.map((r) =>
+        r.assetId === assetId ? liveReview : r
       ),
     });
   };

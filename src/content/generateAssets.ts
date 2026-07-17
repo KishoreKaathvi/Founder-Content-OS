@@ -46,6 +46,16 @@ function claimLead(insight: FounderInsight): string {
   return insight.claim.replace(/\s+/g, " ").trim();
 }
 
+/** Truncate without splitting http(s) URLs mid-token. */
+function safeClip(text: string, max: number): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  let cut = max;
+  const urlStart = t.lastIndexOf("http", cut);
+  if (urlStart > 20 && urlStart < cut) cut = urlStart;
+  return t.slice(0, cut).replace(/[\s/._-]+$/g, "").trimEnd();
+}
+
 function draftFor(
   channel: ContentChannel,
   brief: CampaignBrief,
@@ -66,15 +76,16 @@ function draftFor(
   switch (channel) {
     case "X": {
       const body = [
-        claim.slice(0, 200),
+        safeClip(claim, 180),
         "",
-        why ? `Why it matters: ${why.slice(0, 120)}` : null,
+        why ? `Why it matters: ${safeClip(why, 90)}` : null,
         "",
         cta,
       ]
         .filter(Boolean)
         .join("\n");
-      return body.slice(0, 280) + provenanceFooter(insight);
+      // Prefer complete short post over mid-URL cut
+      return safeClip(body, 260) + provenanceFooter(insight);
     }
 
     case "LINKEDIN":
@@ -99,7 +110,7 @@ function draftFor(
       return [
         `${insight.topic}: a founder take`,
         "",
-        claim.slice(0, 300),
+        safeClip(claim, 280),
         "",
         why,
         "",
@@ -115,8 +126,8 @@ function draftFor(
       return [
         "Carousel outline (editable draft)",
         "Slide 1 — Hook: " + angle,
-        "Slide 2 — The claim: " + claim.slice(0, 200),
-        "Slide 3 — Why it matters: " + why.slice(0, 180),
+        "Slide 2 — The claim: " + safeClip(claim, 200),
+        "Slide 3 — Why it matters: " + safeClip(why, 180),
         "Slide 4 — Proof points:",
         ...proofs.map((p, i) => `  ${i + 1}. ${p}`),
         "Slide 5 — What to do carefully: stay evidence-bound; check sources.",
@@ -129,8 +140,8 @@ function draftFor(
       return [
         "Reel script (~20–30s) — editable draft",
         "Hook (0–3s): " + angle,
-        "Beat 1 (3–12s): State the claim simply — " + claim.slice(0, 160),
-        "Beat 2 (12–22s): Why founders should care — " + why.slice(0, 140),
+        "Beat 1 (3–12s): State the claim simply — " + safeClip(claim, 160),
+        "Beat 2 (12–22s): Why founders should care — " + safeClip(why, 140),
         "Close (22–30s): " + cta,
         "On-screen text: keep claims conservative; no invented stats.",
         "Visual: founder talking head + source link sticker if available.",
@@ -141,8 +152,8 @@ function draftFor(
       return [
         `*${insight.topic}*`,
         "",
-        claim.slice(0, 280),
-        why ? `\n_${why.slice(0, 160)}_` : "",
+        safeClip(claim, 260),
+        why ? `\n_${safeClip(why, 160)}_` : "",
         "",
         cta,
         insight.sourceUrl ? `\nLink: ${insight.sourceUrl}` : "",

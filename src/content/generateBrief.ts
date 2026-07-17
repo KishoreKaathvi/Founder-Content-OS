@@ -24,7 +24,16 @@ export interface BriefInput {
 function clip(text: string, max: number): string {
   const t = text.replace(/\s+/g, " ").trim();
   if (t.length <= max) return t;
-  return t.slice(0, max - 1).trimEnd() + "…";
+  // Prefer cutting before a URL so we never invent truncated http fragments
+  let cut = max - 1;
+  const urlStart = t.lastIndexOf("http", cut);
+  if (urlStart > 40 && urlStart < cut) {
+    cut = urlStart;
+  }
+  let slice = t.slice(0, cut).trimEnd();
+  // Drop trailing partial words/punctuation
+  slice = slice.replace(/[\s/._-]+$/g, "").trimEnd();
+  return slice + "…";
 }
 
 function proofPointsFromInsight(insight: FounderInsight): string[] {

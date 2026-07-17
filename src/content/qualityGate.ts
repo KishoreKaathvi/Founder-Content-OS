@@ -36,7 +36,31 @@ function wordOverlapScore(a: string, b: string): number {
 }
 
 function extractUrls(text: string): string[] {
-  return text.match(/https?:\/\/[^\s)]+/g) || [];
+  const raw = text.match(/https?:\/\/[^\s)]+/g) || [];
+  // Ignore truncated / ellipsis fragments (clip leftovers) — not real invented links
+  return raw.filter((u) => {
+    if (/[…]$/.test(u) || u.includes("…")) return false;
+    if (u.length < 12) return false;
+    // Incomplete host only (e.g. https://medium.com/engin)
+    try {
+      const parsed = new URL(u.replace(/[.,;:]+$/, ""));
+      if (!parsed.hostname.includes(".")) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function urlKnown(candidate: string, known: Set<string>): boolean {
+  const clean = candidate.replace(/[.,;]+$/g, "");
+  for (const k of known) {
+    if (!k) continue;
+    if (clean === k || clean.startsWith(k) || k.startsWith(clean)) return true;
+    // Prefix match when draft URL is a shorter prefix of a known link
+    if (k.startsWith(clean) || clean.startsWith(k.split("?")[0])) return true;
+  }
+  return false;
 }
 
 export function reviewAsset(
@@ -60,11 +84,7 @@ export function reviewAsset(
   );
   const draftUrls = extractUrls(draft);
   const unknownUrls = draftUrls.filter((u) => {
-    for (const k of known) {
-      if (u === k || u.startsWith(k) || k.startsWith(u.replace(/[.,;]+$/, ""))) {
-        return false;
-      }
-    }
+    if (urlKnown(u, known)) return false;
     // allow x.com status links for the author
     if (insight.sourceUrl && u.includes("x.com/") && insight.sourceUrl.includes("x.com/")) {
       return false;
