@@ -125,7 +125,11 @@ const FAQ = [
   },
   {
     q: "What can I export?",
-    a: "Share deep-links, PDF reports, TXT summaries, and JSON of the current run — including graph structure and ranked originals.",
+    a: "From Signal Radar: share deep-links, PDF/TXT reports, and JSON of the run. From Content Studio: Markdown and JSON packages of approved multi-platform drafts (no auto-publish).",
+  },
+  {
+    q: "What is Content Studio / Founder Content OS?",
+    a: "After you rank originals, open Studio (or Sources → Create content). One signal becomes a campaign brief plus editable drafts for X, LinkedIn, Instagram, WhatsApp, Facebook, and YouTube. A quality gate blocks weak approvals. Nothing posts automatically. Campaigns save in your browser history only.",
   },
 ] as const;
 

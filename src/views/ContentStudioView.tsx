@@ -12,6 +12,8 @@ import {
   RefreshCw,
   FileJson,
   FileText,
+  History,
+  Trash2,
 } from "lucide-react";
 import type { KseAnalysisApi } from "../hooks/useKseAnalysis";
 import type {
@@ -29,6 +31,12 @@ import {
 } from "../content/exportCampaign";
 import { ALL_CHANNELS } from "../content/generateAssets";
 import { reviewAsset } from "../content/qualityGate";
+import {
+  listCampaignHistory,
+  removeCampaignHistory,
+  saveCampaignHistory,
+  type CampaignHistoryEntry,
+} from "../content/campaignHistory";
 
 const OBJECTIVES: { id: CampaignObjective; label: string; hint: string }[] = [
   { id: "AWARENESS", label: "Awareness", hint: "Memorable, shareable" },
@@ -60,11 +68,31 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<CampaignHistoryEntry[]>([]);
 
   // Sources / Command jump desk may pre-select a signal
   useEffect(() => {
     if (api.selectedNodeId) setSelectedId(api.selectedNodeId);
   }, [api.selectedNodeId]);
+
+  useEffect(() => {
+    setHistory(listCampaignHistory());
+  }, []);
+
+  const persist = (nextInsight: FounderInsight, nextCampaign: ContentCampaign) => {
+    saveCampaignHistory(nextInsight, nextCampaign);
+    setHistory(listCampaignHistory());
+  };
+
+  const loadHistory = (entry: CampaignHistoryEntry) => {
+    setInsight(entry.insight);
+    setCampaign(entry.campaign);
+    setActiveAssetId(entry.campaign.assets[0]?.id ?? null);
+    setSelectedId(entry.insight.sourceOriginalId);
+    setObjective(entry.objective);
+    setError(null);
+    api.setSelectedNodeId(entry.insight.sourceOriginalId);
+  };
 
   const selectedOriginal = useMemo(
     () => originals.find((o) => o.content_id === selectedId) || null,
@@ -108,8 +136,10 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
           : "";
         throw new Error(data?.error || details || "Campaign generation failed");
       }
-      setCampaign(data as ContentCampaign);
-      setActiveAssetId((data as ContentCampaign).assets[0]?.id ?? null);
+      const camp = data as ContentCampaign;
+      setCampaign(camp);
+      setActiveAssetId(camp.assets[0]?.id ?? null);
+      persist(mapped, camp);
     } catch (e: any) {
       setError(e?.message || "Failed to generate campaign");
     } finally {
@@ -137,11 +167,13 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
             ...nextReviews,
             nextAssets.find((a) => a.id === assetId)!.review!,
           ];
-    setCampaign({
+    const next = {
       ...campaign,
       assets: nextAssets,
       reviews,
-    });
+    };
+    setCampaign(next);
+    persist(insight, next);
   };
 
   const setStatus = (assetId: string, status: ChannelAsset["status"]) => {
@@ -169,7 +201,7 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
       return;
     }
     setError(null);
-    setCampaign({
+    const next = {
       ...campaign,
       assets: campaign.assets.map((a) =>
         a.id === assetId
@@ -179,7 +211,9 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
       reviews: campaign.reviews.map((r) =>
         r.assetId === assetId ? liveReview : r
       ),
-    });
+    };
+    setCampaign(next);
+    persist(insight, next);
   };
 
   const exportPackage = (kind: "md" | "json") => {
@@ -718,6 +752,73 @@ export default function ContentStudioView({ api }: { api: KseAnalysisApi }) {
               </div>
             </div>
           )}
+
+          <div
+            className="pt-3 border-t space-y-2"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div className="flex items-center gap-1.5 kse-label">
+              <History size={11} />
+              Recent campaigns
+            </div>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+              Saved in this browser only (max 12). Not synced to a server.
+            </p>
+            {history.length === 0 ? (
+              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                Generate a campaign to start history.
+              </p>
+            ) : (
+              <ul className="space-y-1.5 max-h-40 overflow-y-auto">
+                {history.map((h) => (
+                  <li key={h.id} className="flex gap-1 items-start">
+                    <button
+                      type="button"
+                      onClick={() => loadHistory(h)}
+                      className="flex-1 text-left rounded px-2 py-1.5 text-[11px]"
+                      style={{
+                        border: "1px solid var(--border)",
+                        background:
+                          campaign?.id === h.id
+                            ? "var(--accent-dim)"
+                            : "var(--surface-2)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      <span className="font-medium block truncate">
+                        {h.topic}
+                      </span>
+                      <span
+                        className="font-mono text-[10px]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {h.objective} ·{" "}
+                        {new Date(h.savedAt).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      title="Remove from history"
+                      aria-label="Remove from history"
+                      onClick={() => {
+                        removeCampaignHistory(h.id);
+                        setHistory(listCampaignHistory());
+                      }}
+                      className="p-1.5 rounded shrink-0"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </aside>
       </div>
     </div>

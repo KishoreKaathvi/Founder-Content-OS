@@ -288,6 +288,10 @@ if bare `npm test` / `tsc` mis-resolves modules.
 - [x] Simulated/fallback labeling  
 - [x] Unit tests + typecheck + production build  
 - [x] Feature branch + Founder-Content-OS `main`  
+- [x] Tighter fallback copy (less claim triple-paste)  
+- [x] Browser campaign history (localStorage)  
+- [x] Landing FAQ + README for Content Studio  
+- [x] Sources → Studio CTA + Jump desk  
 
 ### Out of scope (deferred roadmap)
 
@@ -297,16 +301,15 @@ if bare `npm test` / `tsc` mis-resolves modules.
 - Multi-tenant auth / billing  
 - Performance analytics feedback  
 
-### Remaining product gaps
+### Remaining product gaps (after polish pass)
 
 | Gap | Severity | Notes |
 |-----|----------|--------|
-| No Gemini key → always fallback briefs | Medium | Set `GEMINI_API_KEY` for smarter angles |
-| Fallback draft prose can be verbose | Medium | Not polished founder voice |
-| No automated browser E2E in CI | Low–Med | Manual/agent DevTools only |
-| No campaign history / cloud save | Low | Client download only |
-| Quality gate is heuristic | Low | Not full editorial LLM |
-| Mobile polish | Low | Usable, not finely tuned |
+| No Gemini key → fallback briefs | Medium | Optional `GEMINI_API_KEY`; fallback is tighter but not LLM-quality |
+| No automated browser E2E in CI | Low–Med | Unit tests cover pure path; browser still manual/agent |
+| No cloud campaign sync | Low | **Browser localStorage** history (max 12) — not multi-device |
+| Quality gate is heuristic | Low | Live re-score on edit; not full editorial LLM |
+| Live X / publish / Hinglish / multi-tenant | Deferred | Explicitly out of V1 |
 
 ---
 
@@ -353,4 +356,4 @@ const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-
 
 ---
 
-*Last updated: 2026-07-17 — Founder Content OS V1 complete; real-user E2E verified; handoff refreshed for main.*
+*Last updated: 2026-07-17 — V1 complete + polish (fallback copy, history, docs); main shipped.*

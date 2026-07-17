@@ -1,25 +1,25 @@
-# X-KES — Knowledge Signal Engine
+# X-KES — Knowledge Signal Engine + Founder Content OS
 
-**Multi-view provenance lab** for high-signal social posts: graph-first ranking, noise filtering, score vectors, and export — built as a full-stack TypeScript app (Express + React/Vite).
+**Multi-view provenance lab** for high-signal social posts, plus **Content Studio** that turns one ranked original into multi-platform founder drafts (no auto-publish). Full-stack TypeScript (Express + React/Vite).
 
-> **Honest scope:** This is an **algorithm + UX prototype**. Candidate posts are generated via **Gemini simulation** (or a local fallback dataset). It is **not** yet wired to live X API collection. See SSOT docs for the production path.
+> **Honest scope:** Algorithm + UX prototype. Candidates are **Gemini simulation** or a **local fallback** dataset — **not** live X API. Content Studio exports drafts only; nothing posts automatically.
 
 | | |
 |---|---|
-| **Repo** | [KishoreKaathvi/X-KES-App-July26](https://github.com/KishoreKaathvi/X-KES-App-July26) |
+| **Repos** | [X-KES-App-July26](https://github.com/KishoreKaathvi/X-KES-App-July26) · [Founder-Content-OS](https://github.com/KishoreKaathvi/Founder-Content-OS) |
 | **Stack** | Node.js, TypeScript, Express, React 19, Vite 6, Tailwind CSS 4, Gemini (`@google/genai`) |
 | **Default port** | `http://localhost:3000` |
+| **Default branch** | `main` |
 
 ---
 
-## Two systems (product architecture)
+## Product systems in this repo
 
-| System | Job | Status in this repo |
-|--------|-----|---------------------|
-| **Knowledge Signal Engine** | Topic → candidates → graph → originals ≤10 + why | ✅ Lab UI + pipeline (simulated/fallback data) |
-| **Capture & Context Pipeline** | Bookmark/like → media → tag → store → markdown export | 📄 Spec only (no code yet) |
-
-Keep them **separate**: Signal is pull/on-demand and precision-heavy; Capture is push/hourly and cheap owned-reads.
+| System | Job | Status |
+|--------|-----|--------|
+| **Knowledge Signal Engine** | Topic → candidates → graph → originals ≤10 + why | ✅ Lab UI + pipeline (simulated/fallback) |
+| **Founder Content OS** | Ranked original → brief → 9 channel drafts → quality gate → export | ✅ Content Studio + API |
+| **Capture & Context Pipeline** | Bookmark/like → store → markdown | 📄 Spec only (separate doc) |
 
 ---
 
@@ -27,23 +27,27 @@ Keep them **separate**: Signal is pull/on-demand and precision-heavy; Capture is
 
 Read in this order:
 
-1. **`X - Knowledge Signal Engine 10Jul26.md`** — vision, graph architecture, ranking/provenance, MVP constraints, **codebase reality (`00b`)**
-2. **`X_-_Capture_and_Context_Pipeline_11Jul26.md`** — capture/enrichment pipeline (companion; not implemented here)
-3. **`HANDOFF.md`** — deeper API/math notes for the prototype (may lag UI; prefer `00b` for current layout)
+1. **`HANDOFF.md`** — current status, APIs, E2E notes, gaps (start here for agents)
+2. **`Implementation Plan.md`** — Founder Content OS V1 plan
+3. **`docs/architecture.md`** — Content OS module map
+4. **`X - Knowledge Signal Engine 10Jul26.md`** — KSE SSOT / ranking theory
+5. **`X_-_Capture_and_Context_Pipeline_11Jul26.md`** — companion (not fully coded)
 
 ---
 
 ## Features (current lab app)
 
-- **Motion landing page** (default) — enterprise marketing surface; **one button** enters the portal (**no auth**)
-- **Multi-view shell:** Command · Sources · Cascade (graph) · Noise · Verify · Weights · Watchlist  
+- **Landing** (default) — product surface; **Enter lab** → portal (**no auth**)
+- **Multi-view shell:** Command · Sources · Cascade · Noise · Verify · Weights · **Studio** · Watchlist  
 - **Collapsible nav** (⌘/Ctrl+B), **Light / Dark / System** theme  
-- **Pipeline:** noise filter → edges → DSU components → `source_fitness` → multi-signal scores → report  
-- **Command center:** funnel, score-vector donut, edge taxonomy, timeline heat, leaderboard  
-- **Exports:** Share deep-link, PDF, TXT, JSON  
-- **Resilience:** Gemini model ladder + offline fallback dataset when no key / quota  
+- **KSE pipeline:** noise → graph → `source_fitness` → multi-signal scores → report  
+- **Content Studio:** select original → campaign brief → X / LinkedIn / IG / WhatsApp / Facebook / YouTube drafts → quality gate → approve → MD/JSON export  
+- **Sources CTA:** “Create content in Studio” with selection handoff  
+- **Campaign history:** last 12 campaigns in **browser localStorage** only  
+- **Exports:** KSE share/PDF/TXT/JSON · Content MD/JSON  
+- **Resilience:** Gemini model ladder + offline fallback when no key / quota  
 
-Open the portal via **Enter enterprise portal** or `http://localhost:3000/#portal`.
+Portal: `http://localhost:3000/#portal`
 
 ---
 
@@ -77,7 +81,10 @@ Open **http://localhost:3000**
 | `npm run dev` | Dev server (`tsx server.ts` + Vite middleware) |
 | `npm run build` | Production client + bundled server |
 | `npm start` | Run production server (`dist/server.cjs`) |
-| `npm run lint` | `tsc --noEmit` |
+| `npm run lint` | Typecheck |
+| `npm test` | Vitest unit tests (insight / campaign / quality) |
+
+**Windows note:** If the folder path contains `&`, use `node ./node_modules/...` runners if `npm test` mis-resolves.
 
 ---
 
@@ -85,17 +92,16 @@ Open **http://localhost:3000**
 
 ```
 X-KES/
-├─ server.ts                 # Express API + provenance pipeline + Gemini
+├─ server.ts                 # KSE pipeline + POST /api/content/campaigns
 ├─ src/
-│  ├─ App.tsx                # View router
+│  ├─ content/               # Founder Content OS pure modules
+│  ├─ views/ContentStudioView.tsx
 │  ├─ hooks/useKseAnalysis.ts
-│  ├─ layout/AppShell.tsx    # Nav + top bar
-│  ├─ views/                 # Command, Sources, Graph, Noise, Verify, Tuning, Alerts
-│  ├─ components/            # Graph, SourceCard, charts, …
-│  └─ types.ts               # ContentItem, Edge, ScoreVector, KSERunResult
-├─ X - Knowledge Signal Engine 10Jul26.md
-├─ X_-_Capture_and_Context_Pipeline_11Jul26.md
+│  ├─ layout/AppShell.tsx
+│  └─ types.ts
+├─ Implementation Plan.md
 ├─ HANDOFF.md
+├─ docs/
 └─ package.json
 ```
 
@@ -107,6 +113,7 @@ X-KES/
 |--------|------|---------|
 | `POST` | `/api/kse/run` | Full run: simulate/fallback → filter → graph → rank → report |
 | `POST` | `/api/kse/recalculate` | Re-score cached items (no LLM) after weight changes |
+| `POST` | `/api/content/campaigns` | Founder insight → brief + channel assets + quality reviews |
 
 Body (both):
 

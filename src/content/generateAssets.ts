@@ -8,6 +8,7 @@ import type {
   ContentFormat,
   FounderInsight,
 } from "../types";
+import { dedupeLines, safeClip, shortClaim, stripUrls } from "./textUtils";
 
 export const ALL_CHANNELS: ContentChannel[] = [
   "X",
@@ -42,63 +43,52 @@ function provenanceFooter(insight: FounderInsight): string {
   return bits.length ? `\n\n—\n${bits.join("\n")}` : "";
 }
 
-function claimLead(insight: FounderInsight): string {
-  return insight.claim.replace(/\s+/g, " ").trim();
-}
-
-/** Truncate without splitting http(s) URLs mid-token. */
-function safeClip(text: string, max: number): string {
-  const t = text.replace(/\s+/g, " ").trim();
-  if (t.length <= max) return t;
-  let cut = max;
-  const urlStart = t.lastIndexOf("http", cut);
-  if (urlStart > 20 && urlStart < cut) cut = urlStart;
-  return t.slice(0, cut).replace(/[\s/._-]+$/g, "").trimEnd();
-}
-
 function draftFor(
   channel: ContentChannel,
   brief: CampaignBrief,
   insight: FounderInsight
 ): string {
-  const claim = claimLead(insight);
-  const why = insight.whyItMatters.trim();
+  const claim = shortClaim(insight.claim, 200);
+  const claimFull = insight.claim.replace(/\s+/g, " ").trim();
+  const why = stripUrls(insight.whyItMatters || "").trim();
   const cta = brief.callToAction;
   const angle = brief.coreAngle;
-  const proofs = brief.proofPoints
-    .filter((p) => !p.startsWith("Evidence:"))
-    .slice(0, 3);
+  const proofs = dedupeLines(
+    brief.proofPoints.filter((p) => !/^Evidence:|^Open source:/i.test(p)),
+    insight.claim
+  ).slice(0, 3);
   const evidenceLines = insight.evidenceLinks
     .slice(0, 3)
     .map((e) => `• ${e.title}: ${e.uri}`)
     .join("\n");
+  const who = insight.authorHandle
+    ? `Noted from ${insight.authorHandle}`
+    : "From a ranked Signal Radar original";
 
   switch (channel) {
     case "X": {
       const body = [
-        safeClip(claim, 180),
-        "",
-        why ? `Why it matters: ${safeClip(why, 90)}` : null,
-        "",
+        safeClip(claim, 160),
+        why ? safeClip(why, 70) : null,
         cta,
       ]
         .filter(Boolean)
-        .join("\n");
-      // Prefer complete short post over mid-URL cut
-      return safeClip(body, 260) + provenanceFooter(insight);
+        .join("\n\n");
+      return safeClip(body, 250) + provenanceFooter(insight);
     }
 
     case "LINKEDIN":
       return [
         angle,
         "",
+        who + ":",
         claim,
         "",
-        why ? `For founders: ${why}` : null,
+        why ? `Why it matters: ${why}` : null,
         "",
         proofs.length ? "What we can stand behind:" : null,
         ...proofs.map((p) => `• ${p}`),
-        evidenceLines ? `\nOpen sources:\n${evidenceLines}` : null,
+        evidenceLines ? `\nSources:\n${evidenceLines}` : null,
         "",
         cta,
         provenanceFooter(insight).trim(),
@@ -108,11 +98,11 @@ function draftFor(
 
     case "INSTAGRAM_POST":
       return [
-        `${insight.topic}: a founder take`,
+        `${insight.topic} — a founder take`,
         "",
-        safeClip(claim, 280),
+        claim,
         "",
-        why,
+        why ? why : null,
         "",
         cta,
         "",
@@ -125,26 +115,26 @@ function draftFor(
     case "INSTAGRAM_CAROUSEL":
       return [
         "Carousel outline (editable draft)",
-        "Slide 1 — Hook: " + angle,
-        "Slide 2 — The claim: " + safeClip(claim, 200),
-        "Slide 3 — Why it matters: " + safeClip(why, 180),
-        "Slide 4 — Proof points:",
-        ...proofs.map((p, i) => `  ${i + 1}. ${p}`),
-        "Slide 5 — What to do carefully: stay evidence-bound; check sources.",
-        "Slide 6 — CTA: " + cta,
-        evidenceLines ? `Evidence:\n${evidenceLines}` : "Evidence: see Signal Radar source.",
+        "1. Hook: " + safeClip(angle, 120),
+        "2. Claim: " + claim,
+        "3. Why it matters: " + safeClip(why, 160),
+        "4. Proof:",
+        ...proofs.map((p, i) => `   ${i + 1}) ${p}`),
+        "5. Caveat: stay evidence-bound; check sources before you act.",
+        "6. CTA: " + cta,
+        evidenceLines ? `Sources:\n${evidenceLines}` : "Sources: Signal Radar export.",
         provenanceFooter(insight).trim(),
       ].join("\n");
 
     case "INSTAGRAM_REEL":
       return [
         "Reel script (~20–30s) — editable draft",
-        "Hook (0–3s): " + angle,
-        "Beat 1 (3–12s): State the claim simply — " + safeClip(claim, 160),
-        "Beat 2 (12–22s): Why founders should care — " + safeClip(why, 140),
+        "Hook (0–3s): " + safeClip(angle, 100),
+        "Beat 1 (3–12s): " + claim,
+        "Beat 2 (12–22s): " + safeClip(why, 120),
         "Close (22–30s): " + cta,
-        "On-screen text: keep claims conservative; no invented stats.",
-        "Visual: founder talking head + source link sticker if available.",
+        "On-screen: no invented stats; keep claims conservative.",
+        "Visual: talking head + source sticker if available.",
         provenanceFooter(insight).trim(),
       ].join("\n");
 
@@ -152,13 +142,13 @@ function draftFor(
       return [
         `*${insight.topic}*`,
         "",
-        safeClip(claim, 260),
-        why ? `\n_${safeClip(why, 160)}_` : "",
+        claim,
+        why ? `\n_${safeClip(why, 140)}_` : "",
         "",
         cta,
         insight.sourceUrl ? `\nLink: ${insight.sourceUrl}` : "",
         insight.isSimulatedSource
-          ? "\n(Source: simulated Signal Radar sample — not live X firehose.)"
+          ? "\n_(Simulated Signal Radar sample — not live X.)_"
           : "",
       ]
         .filter(Boolean)
@@ -182,38 +172,44 @@ function draftFor(
 
     case "YOUTUBE_SHORT":
       return [
-        "YouTube Short script (≤60s) — editable draft",
-        "Title idea: " + clipTitle(insight.topic, claim),
-        "0–3s Hook: " + angle,
-        "3–25s: Explain the claim in plain English — " + claim.slice(0, 200),
-        "25–45s: Why it matters for Indian founders / builders — " + why.slice(0, 160),
+        "YouTube Short (≤60s) — editable draft",
+        "Title: " + clipTitle(insight.topic, claim),
+        "0–3s: " + safeClip(angle, 90),
+        "3–25s: " + claim,
+        "25–45s: " + safeClip(why, 140),
         "45–60s CTA: " + cta,
-        "Description: include source URL; no overstated claims.",
+        "Description: source URL only; no overstated claims.",
         provenanceFooter(insight).trim(),
       ].join("\n");
 
     case "YOUTUBE_VIDEO":
       return [
         "Long-form video brief — editable draft",
-        "Working title: " + clipTitle(insight.topic, claim),
-        "Core angle: " + angle,
+        "Title: " + clipTitle(insight.topic, claim),
+        "Angle: " + angle,
         "Audience: " + brief.audience,
         "",
         "Outline:",
-        "1. Cold open with the claim (conservative wording)",
-        "2. Context: who said it / where it came from",
-        "3. Why it matters for product founders",
-        "4. Evidence walk-through (only listed sources)",
-        "5. Practical takeaways + caveats",
+        "1. Cold open — state the claim carefully",
+        "2. Who said it / where it came from (" + who + ")",
+        "3. Why product founders should care",
+        "4. Walk only listed evidence",
+        "5. Takeaways + caveats",
         "6. CTA: " + cta,
         "",
         "Proof points:",
-        ...brief.proofPoints.map((p) => `• ${p}`),
+        ...brief.proofPoints.slice(0, 5).map((p) => `• ${p}`),
         "",
         "Pillars:",
         ...brief.contentPillars.map((p) => `• ${p}`),
         "",
-        evidenceLines ? `Evidence links:\n${evidenceLines}` : "Evidence: attach Signal Radar export.",
+        evidenceLines
+          ? `Evidence:\n${evidenceLines}`
+          : "Evidence: attach Signal Radar export.",
+        // keep full claim once for script reference
+        "",
+        "Source claim (do not invent beyond this):",
+        claimFull,
         provenanceFooter(insight).trim(),
       ].join("\n");
   }
