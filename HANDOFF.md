@@ -1,226 +1,356 @@
-# Knowledge Signal Engine (KSE) — Technical Handoff
+# Knowledge Signal Engine + Founder Content OS — Technical Handoff
 
-Deep notes on the **prototype** pipeline (math, API, recovery). For product truth and MVP constraints, prefer:
+Deep notes for the next engineer or agent. Prefer this file for **current product state**; use SSOT docs for algorithm theory.
 
-- `README.md` — runbook + scope
-- `X - Knowledge Signal Engine 10Jul26.md` — SSOT (including **§0b codebase reality**)
-- `X_-_Capture_and_Context_Pipeline_11Jul26.md` — companion system (not in this repo’s code)
+| Doc | Role |
+|-----|------|
+| `README.md` | Runbook + scope |
+| `Implementation Plan.md` | Founder Content OS V1 plan (source of truth for feature scope) |
+| `docs/architecture.md` | Content OS module map |
+| `docs/ATTRIBUTION.md` | Taste Skill / Social Media Skills notes |
+| `tasks/plan.md` · `tasks/todo.md` | Slice tracker |
+| `X - Knowledge Signal Engine 10Jul26.md` | KSE SSOT |
+| `X_-_Capture_and_Context_Pipeline_11Jul26.md` | Companion system (not all in this repo’s code) |
 
-**Claim discipline:** Stage ① is Gemini simulation or local fallback — **not** live X API.
+**Claim discipline:** Stage ① candidates are Gemini simulation or local fallback — **not** live X API. Content Studio does **not** auto-publish.
 
 ---
 
-## 1. System Architecture & Component Mapping
+## 0. Current status (2026-07-17)
 
-Express backend owns the pipeline; React client is a multi-view analytical workstation.
+### Verdict
+
+| Question | Answer |
+|----------|--------|
+| Is Implementation Plan **V1** implemented? | **Yes** |
+| Does the full user journey work? | **Yes** (browser-proven; fallback mode without Gemini) |
+| Production-ready with live X + polished Gemini copy? | **No** — lab prototype |
+| Everything perfect? | **No** — core path works; polish / live data / publish still open |
+
+### Tip commits
+
+| Commit | Summary |
+|--------|---------|
+| `cdb6e86` | feat: Founder Content OS (contracts, API, Studio, tests) |
+| `3976a1c` | fix: live quality re-score + stop mid-URL draft clips |
+| `75fc68c` | fix: Studio discoverability (landing, Sources CTA, Jump desk) |
+
+### Remotes
+
+| Remote | Repo | Notes |
+|--------|------|--------|
+| `origin` | https://github.com/KishoreKaathvi/X-KES-App-July26 | Historical repo; default branch historically `master` |
+| `founder-os` | https://github.com/KishoreKaathvi/Founder-Content-OS | New product repo; **`main`** = Content OS tip |
+
+### E2E proof (real browser, Chrome DevTools MCP)
+
+Path exercised:
+
+```text
+Landing → FAQ (not live X) → Enter lab
+  → Command: run / switch topic
+  → Sources: inspect + flag + Create content in Studio
+  → Studio: select signal → objective → Generate campaign
+  → 9 channel drafts → quality gate → Approve → Export MD/JSON
+```
+
+**Passed after fixes:** LinkedIn approve (no stale REVISE trap), WhatsApp approve, MD export blob, clean console, fallback labeled, Studio discoverable.
+
+**Bugs found in real-user testing (fixed):**
+
+1. Quality gate scores frozen after draft edit → Approve blocked even when draft fixed  
+2. Truncated URLs (`https://……`) treated as unknown evidence  
+3. Studio hard to find (landing “7 views”, no Sources CTA)
+
+---
+
+## 1. System architecture
+
+Express owns the KSE pipeline and Content OS API; React is a multi-view lab + Content Studio.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     REACT CLIENT (PORT 3000)                           │
-│  AppShell (collapsible nav) · Light/Dark/System · exports              │
-│  Views: Command | Sources | Cascade | Noise | Verify | Weights | Watch │
-│  POST /api/kse/run  ·  POST /api/kse/recalculate                       │
+│  Landing · AppShell (collapsible nav) · Light/Dark/System · exports    │
+│  Analyze: Command | Sources | Cascade | Noise                          │
+│  Quality: Verify | Weights                                             │
+│  Create:  Studio (Founder Content OS)                                  │
+│  Ops:     Watchlist                                                    │
+│  POST /api/kse/run · /api/kse/recalculate · /api/content/campaigns     │
 └───────────────────────────────┬────────────────────────────────────────┘
                                 │
 ┌───────────────────────────────▼────────────────────────────────────────┐
 │                     EXPRESS BACKEND (server.ts)                        │
-│  ① Ingestion (Gemini JSON sim | fallback) → ② Noise → ③ Graph (DSU)    │
-│  → ④ Provenance + multi-signal rank → ⑤ Report (Gemini) → Grounding  │
+│  KSE: ① Ingest (Gemini sim | fallback) → ② Noise → ③ Graph (DSU)      │
+│       → ④ Provenance + multi-signal rank → ⑤ Report → Grounding      │
+│  Content OS: insight validation → brief (Gemini | fallback)            │
+│              → channel adapters → quality reviews → JSON response      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Core source paths (current)
+### Core source paths
 
 | Path | Role |
 |------|------|
-| `server.ts` | Pipeline, Gemini, fallback, APIs |
-| `src/types.ts` | Shared contracts |
-| `src/hooks/useKseAnalysis.ts` | Client state, run/export, filters |
-| `src/layout/AppShell.tsx` | Nav + top bar |
-| `src/views/*` | One concern per view |
-| `src/components/RelationshipGraph.tsx` | Force graph |
-| `src/components/SourceCard.tsx` | Ranked source cards |
-| `src/components/viz/DashCharts.tsx` | Donuts, funnel, sparklines |
+| `server.ts` | KSE pipeline + `POST /api/content/campaigns` |
+| `src/types.ts` | KSE + Content OS contracts |
+| `src/content/mapInsight.ts` | `OriginalSource` → `FounderInsight` |
+| `src/content/generateBrief.ts` | Campaign brief (fallback + prompt) |
+| `src/content/generateAssets.ts` | 9 channel draft adapters |
+| `src/content/qualityGate.ts` | Evidence/voice/platform/clarity gate |
+| `src/content/exportCampaign.ts` | MD/JSON export builders |
+| `src/content/buildCampaign.ts` | Orchestration for API + tests |
+| `src/content/validateCampaignRequest.ts` | API validation |
+| `src/views/ContentStudioView.tsx` | Content Studio UI |
+| `src/hooks/useKseAnalysis.ts` | Client state, run/export, `AppView` |
+| `src/layout/AppShell.tsx` | Nav + top bar (includes Studio) |
+| `src/landing/LandingPage.tsx` | Marketing; lists 8 views including Studio |
+| `src/views/SourcesView.tsx` | Ranked sources + **Create content in Studio** CTA |
+| `src/views/OverviewView.tsx` | Command center + Jump desk → Studio |
+| `vitest.config.ts` | Unit tests |
 
-> **Note:** Legacy one-page `Sidebar.tsx` / `OriginalCard.tsx` may still exist in the tree; the active shell uses **AppShell + views + SourceCard**.
+> **Note:** Legacy `Sidebar.tsx` / `OriginalCard.tsx` may remain; active shell is **AppShell + views + SourceCard**.
+
+### Founder Content OS data flow
+
+```text
+KSERunResult.originals
+  → toFounderInsight(OriginalSource)     // pure; preserves provenance
+  → POST /api/content/campaigns
+  → CampaignBrief + ChannelAsset[] + ContentQualityReview[]
+  → Studio edit / live re-score / Approve
+  → Export Markdown | JSON (approved + gate-pass only)
+```
+
+**Channels (V1):** X, LINKEDIN, INSTAGRAM_POST, INSTAGRAM_CAROUSEL, INSTAGRAM_REEL, WHATSAPP, FACEBOOK, YOUTUBE_SHORT, YOUTUBE_VIDEO.
+
+**No auto-publish.** Audience: Indian-fluent English only.
 
 ---
 
-## 2. Theoretical Ingestion & Social Media Simulation
+## 2. Theoretical ingestion & social media simulation
 
 When a topic search is dispatched, KSE models a chronological event sequence to represent a realistic social cascade.
 
-### 2.1. The Simulation Prompt
-If the **Gemini API Key** is configured, KSE issues a highly targeted simulation instruction utilizing structured JSON output (`responseMimeType: "application/json"`, `temperature: 0.3`). The prompt directs the LLM to construct a logical cascade across a $48$-hour window:
-- **Original Seeds**: Primary disclosures with URLs, scientific paper identifiers, or perceptual file footprints.
-- **Derivative Copies**: Paraphrased retweets or low-effort informational clones.
-- **Engagement Bait**: Speculative threads designed for traffic maximization.
-- **Inter-node References**: Explicitly tracking `parent_id` (conversational replies) and `quoted_id` (quote-retweets).
-- **Screenshot Vectors**: Shared perceptual hashes (`media_hashes`) that trace non-textual graphic distribution.
+### 2.1. The simulation prompt
+
+If **GEMINI_API_KEY** is set, KSE uses structured JSON simulation (`responseMimeType: "application/json"`, `temperature: 0.3`) over a ~48-hour window:
+
+- **Original seeds** — primary disclosures with URLs / media hashes  
+- **Derivative copies** — paraphrases / clones  
+- **Engagement bait** — traffic threads  
+- **Inter-node refs** — `parent_id`, `quoted_id`  
+- **Screenshot vectors** — shared `media_hashes`  
+
+If the key is missing or quota is exhausted → **local high-fidelity fallback** dataset (`is_fallback: true`).
 
 ---
 
-## 3. Detailed Algorithmic Processing Pipeline
+## 3. Detailed algorithmic processing pipeline
 
-The backend processes the raw simulation streams through five distinct modular stages.
+Backend stages for KSE (unchanged theory; still SSOT in the July docs):
 
-### Stage 1: Noise Filter Engine (Spam Pruning)
-Before executing provenance calculation, incoming nodes are run through a heuristic signature scanner to discard low-signal spam or coordinate baiting.
-1. **Signature Scan**: Evaluates the text content against a set of predefined spam regex indices:
-   $$\text{Regexes} = \{ \text{crypto}, \text{giveaway}, \text{airdrop}, \text{click link}, \text{get rich}, \text{mlm}, \text{telegram channel} \}$$
-2. **Metadata Engagement Check**: Detects high hashtag and mention densities originating from unverified accounts with minimal follower foundations:
-   $$\text{Flagged if } \left( N_{\text{hashtags}} + N_{\text{mentions}} > 5 \right) \ \land \ (\text{Followers} < 100) \ \land \ (\neg \text{Verified})$$
-3. **Outcome**: All matching nodes are quarantined into `noise_candidates`, while high-signal nodes move forward to graph assembly.
+### Stage 1: Noise filter
 
-### Stage 2: Disjoint-Set Graph & Edge Resolution
-The engine maps structural relationships to detect information cascades using Disjoint-Set Union (DSU) or Breadth-First Search (BFS) component grouping.
-1. **Structural Edges**:
-   - **Quotes**: Directly resolves $A \rightarrow B$ where $A.\text{quoted\_id} = B.\text{id}$. (Weight: $1.0$)
-   - **Replies**: Resolves $A \rightarrow B$ where $A.\text{parent\_id} = B.\text{id}$. (Weight: $0.8$)
-2. **Cross-Reference Edges**:
-   - **Same URL**: Connects nodes sharing identical external targets (e.g. GitHub repositories). (Weight: $0.9$)
-   - **Same Image Hash**: Connects nodes sharing identical `media_hashes` (identifying graphic plagiarism/screenshots). (Weight: $0.95$)
-   - **Semantic Similarity**: Calculates keyword Jaccard overlap $J(A, B)$. Connects if $J(A, B) > 0.45$. (Weight: $J(A, B)$)
-3. **Cascade Clustering**: Connects nodes into localized components representing distinct narrative branches:
-   $$\text{Union}(u, v) \implies \text{Find}(u) = \text{Find}(v)$$
+Spam regexes, hashtag/mention density on low-follower unverified accounts → `noise_candidates`.
 
-### Stage 3: Provenance Detection & Heuristic Calculations
-For each individual narrative cluster, KSE identifies the true original seed by maximizing **Source Fitness** ($F_s$):
+### Stage 2: Graph / DSU
+
+Edges: quote, reply, same_url, same_image_hash, semantic_sim (Jaccard > 0.45). Components = narrative clusters.
+
+### Stage 3: Source fitness
 
 $$F_s = w_{\text{time}} \cdot T_p + w_{\text{auth}} \cdot A_s + w_{\text{infl}} \cdot D_i - w_{\text{deriv}} \cdot D_s$$
 
-Where:
-*   **$T_p$ (Temporal Priority)**: Chronological precedence normalized across the component's timeline bounds $[T_{\text{earliest}}, T_{\text{latest}}]$:
-    $$T_p = 1.0 - \frac{T_{\text{node}} - T_{\text{earliest}}}{T_{\text{latest}} - T_{\text{earliest}}}$$
-*   **$D_s$ (Derivative Penalty Score)**: Measures how derivative a post is based on structural cues and spammy language triggers:
-    $$D_s = \min\left(1.0, \ \delta_{\text{quote}} \cdot 0.5 + \delta_{\text{reply}} \cdot 0.3 + \delta_{\text{screenshot\_in}} \cdot 0.8 + \delta_{\text{paraphrase\_in}} \cdot 0.6 + \delta_{\text{bait\_regex}} \cdot 0.4\right)$$
-*   **$D_i$ (Downstream Influence)**: The fraction of the cluster's nodes that directly or indirectly reference the target post:
-    $$D_i = \frac{\text{Count}(\text{Incoming Edges pointing to Node})}{\max(1, N_{\text{cluster\_nodes}})}$$
-*   **$A_s$ (Authority Score)**: Combines user verification, logarithmic follower count, and official status:
-    $$A_s = \min\left(1.0, \ 0.35 \cdot \text{Verified} + 0.35 \cdot \frac{\ln(1 + \text{Followers})}{\ln(1 + 1{,}000{,}000)} + 0.20 \cdot \text{OfficialAnnouncement} + 0.05\right)$$
+### Stage 4: Presentation rank
 
-### Stage 4: Multi-Signal Presentation Ranking
-Once the primary origin node of each cluster is identified, KSE calculates its **Presentation Score** ($P_s$) to rank the core disclosures shown on the UI:
+$$P_s = \alpha \cdot \text{orig} + \beta \cdot \text{auth} + \gamma \cdot \text{infl} + \delta \cdot \text{evid} + \epsilon \cdot \text{fresh}$$
 
-$$P_s = \alpha \cdot \text{Originality} + \beta \cdot \text{Authority} + \gamma \cdot \text{Influence} + \delta \cdot \text{Evidence} + \epsilon \cdot \text{Freshness}$$
+Top ≤10 originals.
 
-Where:
--   **Originality**: Measures seed priority and lack of duplication:
-    $$\text{Originality} = \min\left(1.0, \ 0.45 \cdot T_p + 0.25 \cdot (1.0 - D_s) + 0.20 \cdot \delta_{\text{media\_hash}} + 0.10\right)$$
--   **Evidence**: Quantifies verified backing and external references:
-    $$\text{Evidence} = \min\left(1.0, \ 0.40 \cdot \text{Verified} + 0.30 \cdot \delta_{\text{cluster\_size} > 3} + 0.30 \cdot \delta_{\text{external\_artifact}}\right)$$
--   **Freshness**: Derived from temporal prioritization relative to the entire dataset.
+### Stage 5: Grounding
 
-### Stage 5: Independent Verification Grounding
-KSE submits the identified topic and core claims to the Gemini Search Grounding API (`googleSearch: {}`):
-- Executes search queries to verify if claims are verified on platforms like GitHub or preprint hubs like arXiv.
-- Automatically compiles a structured verification verdict summary and lists direct, clickable citations in the analytical dashboard.
+Gemini Search Grounding when available; offline dynamic check in fallback.
 
 ---
 
-## 4. API Specification Contracts
+## 4. API contracts
 
-### 4.1. Run Full Provenance Analysis
-*   **Endpoint**: `/api/kse/run`
-*   **Method**: `POST`
-*   **Payload**:
+### 4.1. Run KSE
+
+- **POST** `/api/kse/run`  
+- Body: `{ topic, provenanceWeights?, presentationWeights? }`  
+- Response: `KSERunResult` (`is_fallback`, `originals`, `edges`, `noise_candidates`, `verification_grounding`, …)
+
+### 4.2. Recalculate weights
+
+- **POST** `/api/kse/recalculate`  
+- Cached / offline re-rank without new LLM ingest cost when cache hit.
+
+### 4.3. Content campaign (Founder Content OS)
+
+- **POST** `/api/content/campaigns`  
+- Body:
 ```json
 {
-  "topic": "TypeScript v5.5 Release",
-  "provenanceWeights": {
-    "w_time": 0.45,
-    "w_auth": 0.25,
-    "w_infl": 0.20,
-    "w_deriv": 0.35
-  },
-  "presentationWeights": {
-    "alpha": 0.35,
-    "beta": 0.20,
-    "gamma": 0.25,
-    "delta": 0.15,
-    "epsilon": 0.05,
-    "zeta": 0.0
-  }
+  "insight": { /* FounderInsight */ },
+  "objective": "AWARENESS | TRUST | LEADS",
+  "audience": "optional string",
+  "founderContext": "optional string",
+  "channels": ["X", "LINKEDIN", "..."]
 }
 ```
-*   **Response (`KSERunResult`)**:
-```json
-{
-  "topic": "TypeScript v5.5 Release",
-  "run_meta": {
-    "collected_candidates": 18,
-    "after_dedup": 16,
-    "components": 3,
-    "api_calls_used": 3
-  },
-  "raw_items": [],
-  "authors": {},
-  "edges": [],
-  "originals": [],
-  "summary": "Full topical summary generated by Gemini...",
-  "weights": { ... },
-  "is_fallback": false,
-  "verification_grounding": {
-    "verdict_summary": "Verified release...",
-    "sources": [{ "uri": "https://github.com/...", "title": "TS 5.5 Spec" }]
-  },
-  "noise_candidates": []
-}
-```
+- Success: `{ id, brief, assets, reviews, is_fallback, createdAt }`  
+- Validation errors: `{ error, code: "VALIDATION", details: string[] }`  
+- Internal failures: `{ error, code: "INTERNAL" }` (no raw model dumps)
 
-### 4.2. Recalculate Provenance (Weights Recalculation)
-Runs in $O(V + E)$ on the cached dataset to support instant slider updates without re-triggering expensive LLM generation.
-*   **Endpoint**: `/api/kse/recalculate`
-*   **Method**: `POST`
-*   **Payload**: Identical schema to `/api/kse/run`.
+**FounderInsight** must include: `id`, `sourceOriginalId`, `topic`, `claim`, `audience: "INDIAN_ENGLISH"`, `evidenceLinks[]`, scores, optional `isSimulatedSource`, `sourceUrl`.
 
 ---
 
-## 5. Frontend Architecture & State Controls
+## 5. Frontend architecture & state
 
-### 5.1. Temporal Window Controls (Time Window Slider)
-A slider bounds control dynamically filters results on the client side:
-- **State**: `dateRange: [number, number]` tracks active milliseconds.
-- **Filtering Logic**: React computes a `filteredResult` memo that filters active nodes, updates edge sets, and updates aggregate metrics:
-```ts
-const filteredRawItems = result.raw_items.filter(item => {
-  const t = new Date(item.created_at).getTime();
-  return t >= minTime && t <= maxTime;
-});
-```
-- **Fallback Guard**: If the selected claim falls outside the slider window, KSE updates the active selection:
-```ts
-useEffect(() => {
-  if (filteredResult && filteredResult.raw_items) {
-    const hasSelected = filteredResult.raw_items.some(item => item.id === selectedNodeId);
-    if (!hasSelected) {
-      setSelectedNodeId(filteredResult.originals[0]?.content_id || null);
-    }
-  }
-}, [filteredResult, selectedNodeId]);
-```
+### 5.1. Views (`AppView`)
 
-### 5.2. Dynamic Cluster Sentiment Classification
-An aggregate sentiment badge is rendered for each original source cluster. The sentiment is calculated on the server by evaluating the core claim and its downstream branches:
-- **Formula**: Evaluates downstream replies and quotes using keywords like *amazing, huge, awesome, breakthrough* (+1), or *fake, scam, bad, disappointing* (-1).
-- **Sentiment Indicators**:
-  - **Positive**: High positive ratio, styled in emerald (e.g. `text-emerald-400 bg-emerald-950/30`).
-  - **Negative**: High negative ratio, styled in rose (e.g. `text-rose-400 bg-rose-950/30`).
-  - **Neutral**: Balance of reactions, styled in slate (e.g. `text-slate-400 bg-slate-900/30`).
+`overview` | `sources` | `graph` | `noise` | `verify` | `tuning` | `content` | `alerts`
 
-### 5.3. Portability Export Engine
-- **JSON Exporter**: Packages and downloads the entire active `filteredResult` payload as `kse-analysis-[topic].json`.
-- **Text Report Exporter**: Generates a highly formatted, detailed textual dossier including tuning weights, verification grounding, citations, and ranked originals.
+### 5.2. Content Studio UX
+
+1. Select ranked original (or arrive via Sources **Create content in Studio**)  
+2. Objective: Awareness / Trust / Leads  
+3. Optional founder context  
+4. Generate → brief + channel tabs + quality scores  
+5. Edit drafts → **gate re-scores live** on edit/approve  
+6. Approve only if recommendation is APPROVE  
+7. Export MD/JSON (approved + gate-pass only)
+
+### 5.3. Temporal window & exports (KSE)
+
+- Client `dateRange` filters nodes/edges  
+- Export analysis JSON / text report / PDF still available from shell  
+
+### 5.4. Themes
+
+Light / Dark / System via AppShell.
 
 ---
 
-## 6. Failure Recovery & API Optimization
+## 6. Failure recovery & API optimization
 
-To ensure continuous operation under API rate limits (HTTP 429) or missing keys:
-1. **Dynamic Model Fallback List**: Checks and cycles through multiple model endpoints to maximize availability:
-   ```ts
-   const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest"];
-   ```
-2. **Exponential Backoff**: If rate-limited, KSE retries up to 3 times per model, doubling the wait time after each failure:
-   $$\text{Delay}_n = \text{Delay}_0 \cdot 2^{n-1}$$
-3. **Local High-Fidelity Dataset**: If all API limits are exhausted, KSE activates its local backup engine to populate a complete, realistic dataset for the selected topic.
+1. Model list with retries + exponential backoff  
+2. Quota flag → skip Gemini, use fallback  
+3. Missing `GEMINI_API_KEY` → full local path for KSE **and** Content OS briefs  
+4. Content OS always produces deterministic channel adapters + reviews even when brief is fallback  
+
+---
+
+## 7. Testing & scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | `tsx server.ts` (Vite middleware + APIs) on **:3000** |
+| `npm run lint` | `tsc --noEmit` (node-direct path for folders with `&`) |
+| `npm test` | Vitest: mapper + campaign/quality/export |
+| `npm run build` | Vite client + esbuild `server.ts` → `dist/` |
+
+**Windows path note:** Workspace path contains `&` (`X (Signal Radar) & SM Co`). Prefer:
+
+```powershell
+node .\node_modules\vitest\vitest.mjs run
+node .\node_modules\typescript\bin\tsc --noEmit
+```
+
+if bare `npm test` / `tsc` mis-resolves modules.
+
+### Unit coverage (V1)
+
+- Complete / missing-evidence / simulated `toFounderInsight`  
+- Campaign build X+LinkedIn, validation errors  
+- Quality REVISE blocks export  
+- Markdown export for approved assets  
+
+### Not in CI yet
+
+- Playwright / Chrome full-browser E2E suite  
+
+---
+
+## 8. What’s in V1 vs missing
+
+### In scope and done
+
+- [x] Insight contracts + pure mapper + provenance  
+- [x] Campaign API + Gemini/fallback brief  
+- [x] All planned channels as editable drafts  
+- [x] Quality gate (blocking approve/export)  
+- [x] Content Studio UI + discoverability  
+- [x] MD/JSON export  
+- [x] Simulated/fallback labeling  
+- [x] Unit tests + typecheck + production build  
+- [x] Feature branch + Founder-Content-OS `main`  
+
+### Out of scope (deferred roadmap)
+
+- Live X collection  
+- Auto-publish / OAuth to social platforms  
+- Hinglish / regional languages  
+- Multi-tenant auth / billing  
+- Performance analytics feedback  
+
+### Remaining product gaps
+
+| Gap | Severity | Notes |
+|-----|----------|--------|
+| No Gemini key → always fallback briefs | Medium | Set `GEMINI_API_KEY` for smarter angles |
+| Fallback draft prose can be verbose | Medium | Not polished founder voice |
+| No automated browser E2E in CI | Low–Med | Manual/agent DevTools only |
+| No campaign history / cloud save | Low | Client download only |
+| Quality gate is heuristic | Low | Not full editorial LLM |
+| Mobile polish | Low | Usable, not finely tuned |
+
+---
+
+## 9. Local runbook
+
+```powershell
+# From repo root
+copy .env.example .env   # if present; add GEMINI_API_KEY optionally
+npm install
+npm run dev              # http://localhost:3000
+```
+
+Portal: `#portal`  
+Content path: run topic → Sources → **Create content in Studio** → Generate → Approve → Export.
+
+---
+
+## 10. Next engineer checklist
+
+1. Confirm remotes: work on **Founder-Content-OS** `main` or merge feature into **X-KES-App-July26** `master` as needed.  
+2. Optional: `.env` with `GEMINI_API_KEY` and re-test campaign quality.  
+3. Optional: Playwright smoke for Studio path in CI.  
+4. Do **not** claim live X provenance until Collector uses compliant live data.  
+5. Do **not** add auto-publish without explicit platform auth product decision.  
+
+---
+
+## 11. Historical KSE notes (still valid)
+
+### Sentiment (if present on cards)
+
+Downstream keyword heuristics for positive/negative/neutral badges.
+
+### Export engine
+
+- KSE: `kse-analysis-[topic].json`, text report, PDF  
+- Content OS: `content-campaign-[topic].md` / `.json`  
+
+### Model list (server)
+
+```ts
+const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest"];
+```
+
+---
+
+*Last updated: 2026-07-17 — Founder Content OS V1 complete; real-user E2E verified; handoff refreshed for main.*
