@@ -16,7 +16,7 @@ Deep notes for the next engineer or agent. Prefer this file for **current produc
 
 ---
 
-## 0. Current status (2026-07-17)
+## 0. Current status (2026-07-18)
 
 ### Verdict
 
@@ -24,37 +24,45 @@ Deep notes for the next engineer or agent. Prefer this file for **current produc
 |----------|--------|
 | Is Implementation Plan **V1** implemented? | **Yes** |
 | Does the full user journey work? | **Yes** (browser-proven; fallback mode without Gemini) |
-| Production-ready with live X + polished Gemini copy? | **No** — lab prototype |
-| Everything perfect? | **No** — core path works; polish / live data / publish still open |
+| Production-ready with live X + multi-tenant SaaS? | **No** — lab prototype |
+| Docs consistent with code? | **Yes** (full `.md` pass 2026-07-18) |
 
-### Tip commits
+### Tip commits (history)
 
 | Commit | Summary |
 |--------|---------|
 | `cdb6e86` | feat: Founder Content OS (contracts, API, Studio, tests) |
 | `3976a1c` | fix: live quality re-score + stop mid-URL draft clips |
 | `75fc68c` | fix: Studio discoverability (landing, Sources CTA, Jump desk) |
+| `df6e0ee` | docs: HANDOFF for Content OS V1 |
+| `34448ff` | polish: tighter drafts, local history, README/FAQ |
 
 ### Remotes
 
-| Remote | Repo | Notes |
-|--------|------|--------|
-| `origin` | https://github.com/KishoreKaathvi/X-KES-App-July26 | Historical repo; default branch historically `master` |
-| `founder-os` | https://github.com/KishoreKaathvi/Founder-Content-OS | New product repo; **`main`** = Content OS tip |
+| Remote | Repo | Default branch |
+|--------|------|----------------|
+| `origin` | https://github.com/KishoreKaathvi/X-KES-App-July26 | **`main`** (also `master` synced) |
+| `founder-os` | https://github.com/KishoreKaathvi/Founder-Content-OS | **`main`** |
 
-### E2E proof (real browser, Chrome DevTools MCP)
+### Verification
 
-Path exercised:
+| Check | Result |
+|-------|--------|
+| Unit tests | 13 pass |
+| Typecheck | pass |
+| Real-user Chrome E2E | Landing → KSE → Studio → approve → export MD |
+| Lab confidence score | ~83% SHIP WITH CONDITIONS (public multi-tenant needs hardening) |
+
+### E2E path (proven)
 
 ```text
-Landing → FAQ (not live X) → Enter lab
-  → Command: run / switch topic
-  → Sources: inspect + flag + Create content in Studio
-  → Studio: select signal → objective → Generate campaign
-  → 9 channel drafts → quality gate → Approve → Export MD/JSON
+Landing → FAQ (not live X / Content Studio FAQ) → Enter lab
+  → Command: run / switch topic (FALLBACK MODE labelled)
+  → Sources: Create content in Studio  OR  Jump desk → Studio
+  → Generate campaign → 9 channel drafts
+  → Quality gate → Approve → Export MD/JSON
+  → Recent campaigns (localStorage)
 ```
-
-**Passed after fixes:** LinkedIn approve (no stale REVISE trap), WhatsApp approve, MD export blob, clean console, fallback labeled, Studio discoverable.
 
 **Bugs found in real-user testing (fixed):**
 
@@ -95,12 +103,15 @@ Express owns the KSE pipeline and Content OS API; React is a multi-view lab + Co
 | `server.ts` | KSE pipeline + `POST /api/content/campaigns` |
 | `src/types.ts` | KSE + Content OS contracts |
 | `src/content/mapInsight.ts` | `OriginalSource` → `FounderInsight` |
+| `src/content/voice.ts` | Founder voice rules + default CTAs |
+| `src/content/textUtils.ts` | URL-safe clip / short claim / dedupe |
 | `src/content/generateBrief.ts` | Campaign brief (fallback + prompt) |
 | `src/content/generateAssets.ts` | 9 channel draft adapters |
 | `src/content/qualityGate.ts` | Evidence/voice/platform/clarity gate |
 | `src/content/exportCampaign.ts` | MD/JSON export builders |
 | `src/content/buildCampaign.ts` | Orchestration for API + tests |
 | `src/content/validateCampaignRequest.ts` | API validation |
+| `src/content/campaignHistory.ts` | Browser localStorage history (max 12) |
 | `src/views/ContentStudioView.tsx` | Content Studio UI |
 | `src/hooks/useKseAnalysis.ts` | Client state, run/export, `AppView` |
 | `src/layout/AppShell.tsx` | Nav + top bar (includes Studio) |
@@ -268,6 +279,7 @@ if bare `npm test` / `tsc` mis-resolves modules.
 - Campaign build X+LinkedIn, validation errors  
 - Quality REVISE blocks export  
 - Markdown export for approved assets  
+- textUtils + tighter fallback brief/assets polish  
 
 ### Not in CI yet
 
@@ -282,16 +294,15 @@ if bare `npm test` / `tsc` mis-resolves modules.
 - [x] Insight contracts + pure mapper + provenance  
 - [x] Campaign API + Gemini/fallback brief  
 - [x] All planned channels as editable drafts  
-- [x] Quality gate (blocking approve/export)  
+- [x] Quality gate (blocking approve/export) + live re-score  
 - [x] Content Studio UI + discoverability  
 - [x] MD/JSON export  
 - [x] Simulated/fallback labeling  
 - [x] Unit tests + typecheck + production build  
-- [x] Feature branch + Founder-Content-OS `main`  
-- [x] Tighter fallback copy (less claim triple-paste)  
+- [x] Shipped on **`main`** (both remotes)  
+- [x] Tighter fallback copy  
 - [x] Browser campaign history (localStorage)  
-- [x] Landing FAQ + README for Content Studio  
-- [x] Sources → Studio CTA + Jump desk  
+- [x] Landing FAQ + complete project docs  
 
 ### Out of scope (deferred roadmap)
 
@@ -300,16 +311,19 @@ if bare `npm test` / `tsc` mis-resolves modules.
 - Hinglish / regional languages  
 - Multi-tenant auth / billing  
 - Performance analytics feedback  
+- Cloud campaign sync  
+- Public deploy rate limits  
 
-### Remaining product gaps (after polish pass)
+### Remaining product gaps
 
 | Gap | Severity | Notes |
 |-----|----------|--------|
-| No Gemini key → fallback briefs | Medium | Optional `GEMINI_API_KEY`; fallback is tighter but not LLM-quality |
-| No automated browser E2E in CI | Low–Med | Unit tests cover pure path; browser still manual/agent |
-| No cloud campaign sync | Low | **Browser localStorage** history (max 12) — not multi-device |
-| Quality gate is heuristic | Low | Live re-score on edit; not full editorial LLM |
-| Live X / publish / Hinglish / multi-tenant | Deferred | Explicitly out of V1 |
+| No Gemini key → fallback briefs | Medium | Optional `GEMINI_API_KEY` |
+| No automated browser E2E in CI | Low–Med | Units cover pure path |
+| No cloud campaign sync | Low | localStorage max 12 |
+| Quality gate is heuristic | Low | Not full editorial LLM |
+| ContentStudioView large | Low | ~880 LOC — optional split |
+| Live X / publish / multi-tenant | Deferred | Out of V1 |
 
 ---
 
@@ -317,7 +331,7 @@ if bare `npm test` / `tsc` mis-resolves modules.
 
 ```powershell
 # From repo root
-copy .env.example .env   # if present; add GEMINI_API_KEY optionally
+copy .env.example .env   # optional GEMINI_API_KEY
 npm install
 npm run dev              # http://localhost:3000
 ```
@@ -329,11 +343,12 @@ Content path: run topic → Sources → **Create content in Studio** → Generat
 
 ## 10. Next engineer checklist
 
-1. Confirm remotes: work on **Founder-Content-OS** `main` or merge feature into **X-KES-App-July26** `master` as needed.  
+1. Work on **`main`** of either remote (same tip).  
 2. Optional: `.env` with `GEMINI_API_KEY` and re-test campaign quality.  
 3. Optional: Playwright smoke for Studio path in CI.  
 4. Do **not** claim live X provenance until Collector uses compliant live data.  
 5. Do **not** add auto-publish without explicit platform auth product decision.  
+6. If deploying publicly: add rate limits / network controls on APIs.  
 
 ---
 
@@ -356,4 +371,4 @@ const modelsToTry = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-
 
 ---
 
-*Last updated: 2026-07-17 — V1 complete + polish (fallback copy, history, docs); main shipped.*
+*Last updated: 2026-07-18 — V1 complete + polish; all project `.md` files aligned with shipped code; `main` on both remotes.*

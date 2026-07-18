@@ -1,16 +1,15 @@
-> **Document status:** X - Capture & Context Pipeline (Draft v1.2 — repo-ready) · Owner: (you) · Last updated: 2026-07-11
-> **Companion doc:** `X - Knowledge Signal Engine 10Jul26.md` (discovery/provenance). This is the second stage — capture, enrichment, and delivery.
-> **Repo README:** `README.md` (how to run the KSE lab that coexists in this monorepo)
-> **Reading order:** `00-overview` → **`00b-codebase-reality`** → architecture → build-spec → roadmap
-> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26
+> **Document status:** X - Capture & Context Pipeline (Draft v1.3) · Last updated: **2026-07-18**  
+> **Companion doc:** `X - Knowledge Signal Engine 10Jul26.md` (discovery/provenance). This is a **separate** push-shaped capture system.  
+> **Repo README:** `README.md` · **Current lab status:** `HANDOFF.md`  
+> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26 · https://github.com/KishoreKaathvi/Founder-Content-OS  
 
 ---
 
-## 0b. Codebase reality (2026-07-11 audit) ⚠️
+## 0b. Codebase reality (2026-07-18) ⚠️
 
-### Status: design-only — **zero Capture code in the monorepo**
+### Status: design-only — **zero Capture pipeline code in the monorepo**
 
-A full audit of `X-KES/` shows:
+This document describes a **future** capture/enrichment product. It is **not** implemented.
 
 | Expected (this doc) | In repo? |
 |---------------------|----------|
@@ -21,7 +20,15 @@ A full audit of `X-KES/` shows:
 | Markdown context exporter | ❌ |
 | Railway/cron job for this pipeline | ❌ |
 
-What *is* in the monorepo is the **Knowledge Signal Engine prototype only** (Express + React + Gemini simulation of social cascades, provenance ranking, dashboard, JSON/TXT/PDF export). See companion SSOT section **`00b-codebase-reality`** and `HANDOFF.md`.
+### What *is* in the monorepo (do not confuse with Capture)
+
+| System | Status |
+|--------|--------|
+| Knowledge Signal Engine (Signal Radar lab) | ✅ Express + React; Gemini sim / fallback; provenance ranking; multi-view portal |
+| Founder Content OS (Content Studio) | ✅ Multi-platform **draft** generation from ranked originals; no auto-publish |
+| Capture & Context Pipeline | ❌ This SSOT only |
+
+See companion **`00b-codebase-reality`** in the KSE doc, plus `HANDOFF.md` and `Implementation Plan.md`.
 
 ### Implications (do not silently merge systems)
 

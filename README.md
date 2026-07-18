@@ -1,53 +1,75 @@
 # X-KES — Knowledge Signal Engine + Founder Content OS
 
-**Multi-view provenance lab** for high-signal social posts, plus **Content Studio** that turns one ranked original into multi-platform founder drafts (no auto-publish). Full-stack TypeScript (Express + React/Vite).
+Full-stack **TypeScript** lab (Express + React/Vite) that:
 
-> **Honest scope:** Algorithm + UX prototype. Candidates are **Gemini simulation** or a **local fallback** dataset — **not** live X API. Content Studio exports drafts only; nothing posts automatically.
+1. **Signal Radar (KSE)** — ranks ≤10 high-signal “originals” for a topic (graph-first provenance).  
+2. **Founder Content OS** — turns one ranked original into multi-platform **editable drafts** (Content Studio).
+
+> **Honest scope:** Algorithm + UX **prototype**. Stage ① candidates are **Gemini simulation** or a **local fallback** — **not** live X API. Content Studio **exports** drafts only; **no auto-publish**.
 
 | | |
 |---|---|
 | **Repos** | [X-KES-App-July26](https://github.com/KishoreKaathvi/X-KES-App-July26) · [Founder-Content-OS](https://github.com/KishoreKaathvi/Founder-Content-OS) |
-| **Stack** | Node.js, TypeScript, Express, React 19, Vite 6, Tailwind CSS 4, Gemini (`@google/genai`) |
-| **Default port** | `http://localhost:3000` |
-| **Default branch** | `main` |
+| **Default branch** | `main` (tip includes Content OS V1 + polish) |
+| **Stack** | Node.js, TypeScript, Express, React 19, Vite 6, Tailwind CSS 4, `@google/genai` |
+| **Local URL** | http://localhost:3000 · Portal: `#portal` |
+| **V1 status** | **Complete** (2026-07-18) — real-user E2E verified; lab confidence ~83% |
 
 ---
 
-## Product systems in this repo
+## Product systems
 
 | System | Job | Status |
 |--------|-----|--------|
-| **Knowledge Signal Engine** | Topic → candidates → graph → originals ≤10 + why | ✅ Lab UI + pipeline (simulated/fallback) |
-| **Founder Content OS** | Ranked original → brief → 9 channel drafts → quality gate → export | ✅ Content Studio + API |
-| **Capture & Context Pipeline** | Bookmark/like → store → markdown | 📄 Spec only (separate doc) |
+| **Knowledge Signal Engine** | Topic → candidates → noise → graph → rank ≤10 + verify/export | ✅ Shipped (simulated/fallback data) |
+| **Founder Content OS** | Original → insight → brief → 9 channel drafts → quality gate → export | ✅ Shipped (Content Studio + API) |
+| **Capture & Context Pipeline** | Bookmark/like → media → taxonomy → archive | 📄 Spec only — `X_-_Capture_and_Context_Pipeline_11Jul26.md` |
 
 ---
 
-## Documentation (SSOT)
+## Documentation map
 
-Read in this order:
-
-1. **`HANDOFF.md`** — current status, APIs, E2E notes, gaps (start here for agents)
-2. **`Implementation Plan.md`** — Founder Content OS V1 plan
-3. **`docs/architecture.md`** — Content OS module map
-4. **`X - Knowledge Signal Engine 10Jul26.md`** — KSE SSOT / ranking theory
-5. **`X_-_Capture_and_Context_Pipeline_11Jul26.md`** — companion (not fully coded)
+| Doc | Use when |
+|-----|----------|
+| **`HANDOFF.md`** | **Start here** — current state, APIs, modules, E2E, gaps, runbook |
+| **`Implementation Plan.md`** | Founder Content OS V1 requirements + phase checklist (implementation status at top) |
+| **`docs/architecture.md`** | Content OS module map + safety rules |
+| **`docs/ATTRIBUTION.md`** | Taste Skill / Social Media Skills pattern credits |
+| **`tasks/plan.md`** · **`tasks/todo.md`** | Execution tracker |
+| **`X - Knowledge Signal Engine 10Jul26.md`** | KSE product SSOT + ranking theory + **§0b codebase reality** |
+| **`X_-_Capture_and_Context_Pipeline_11Jul26.md`** | Companion system (not coded) |
 
 ---
 
-## Features (current lab app)
+## Features (what ships today)
 
-- **Landing** (default) — product surface; **Enter lab** → portal (**no auth**)
-- **Multi-view shell:** Command · Sources · Cascade · Noise · Verify · Weights · **Studio** · Watchlist  
-- **Collapsible nav** (⌘/Ctrl+B), **Light / Dark / System** theme  
-- **KSE pipeline:** noise → graph → `source_fitness` → multi-signal scores → report  
-- **Content Studio:** select original → campaign brief → X / LinkedIn / IG / WhatsApp / Facebook / YouTube drafts → quality gate → approve → MD/JSON export  
-- **Sources CTA:** “Create content in Studio” with selection handoff  
-- **Campaign history:** last 12 campaigns in **browser localStorage** only  
-- **Exports:** KSE share/PDF/TXT/JSON · Content MD/JSON  
-- **Resilience:** Gemini model ladder + offline fallback when no key / quota  
+### Portal (8 views)
 
-Portal: `http://localhost:3000/#portal`
+| Group | Views |
+|-------|--------|
+| Analyze | Command · Sources · Cascade · Noise |
+| Quality | Verify · Weights |
+| Create | **Studio** (Founder Content OS) |
+| Ops | Watchlist |
+
+Also: landing page, collapsible nav (Ctrl/Cmd+B), Light/Dark/System theme, Sources **Create content in Studio**, Jump desk → Studio, campaign **localStorage** history (max 12).
+
+### Signal Radar
+
+Noise filter → edges (quote/reply/same_url/same_image_hash/semantic_sim) → DSU components → `source_fitness` → multi-signal scores → report/grounding → JSON/TXT/PDF export.
+
+### Content Studio path
+
+```text
+Ranked OriginalSource
+  → FounderInsight
+  → POST /api/content/campaigns
+  → CampaignBrief + ChannelAsset[9] + ContentQualityReview[]
+  → edit · live re-score · Approve
+  → Markdown / JSON export (approved + gate-pass only)
+```
+
+**Channels:** X · LinkedIn · IG Post · IG Carousel · IG Reel · WhatsApp · Facebook · YouTube Short · YouTube Video.
 
 ---
 
@@ -55,67 +77,68 @@ Portal: `http://localhost:3000/#portal`
 
 ### Prerequisites
 
-- **Node.js 20+** (or 18+)
-- Optional: **Gemini API key** for live simulation + grounding (fallback works without it)
+- Node.js **20+** (or 18+)
+- Optional: `GEMINI_API_KEY` (without it, KSE + Content OS use **deterministic fallback**)
 
 ### Install & run
 
 ```bash
 npm install
-```
-
-Create `.env` or `.env.local` (optional):
-
-```env
-GEMINI_API_KEY=your_key_here
-```
-
-```bash
+cp .env.example .env   # optional: set GEMINI_API_KEY
 npm run dev
 ```
 
-Open **http://localhost:3000**
+Open http://localhost:3000 → **Enter lab** (or `#portal`).
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` | Dev server (`tsx server.ts` + Vite middleware) |
-| `npm run build` | Production client + bundled server |
-| `npm start` | Run production server (`dist/server.cjs`) |
-| `npm run lint` | Typecheck |
-| `npm test` | Vitest unit tests (insight / campaign / quality) |
+| `npm run dev` | Dev server (`tsx server.ts` + Vite) |
+| `npm run build` | Production client + `dist/server.cjs` |
+| `npm start` | Run production server |
+| `npm run lint` | `tsc --noEmit` |
+| `npm test` | Vitest (13 tests: mapper, campaign, quality, text utils) |
 
-**Windows note:** If the folder path contains `&`, use `node ./node_modules/...` runners if `npm test` mis-resolves.
+**Windows:** If the folder path contains `&`, prefer:
+
+```bash
+node ./node_modules/vitest/vitest.mjs run
+node ./node_modules/typescript/bin/tsc --noEmit
+```
 
 ---
 
 ## Project layout
 
-```
-X-KES/
-├─ server.ts                 # KSE pipeline + POST /api/content/campaigns
+```text
+├─ server.ts                      # KSE pipeline + content campaign API
 ├─ src/
-│  ├─ content/               # Founder Content OS pure modules
-│  ├─ views/ContentStudioView.tsx
-│  ├─ hooks/useKseAnalysis.ts
+│  ├─ types.ts                    # KSE + Content OS contracts
+│  ├─ content/                    # Pure Content OS modules
+│  │  ├─ mapInsight.ts
+│  │  ├─ generateBrief.ts · generateAssets.ts
+│  │  ├─ qualityGate.ts · exportCampaign.ts
+│  │  ├─ buildCampaign.ts · validateCampaignRequest.ts
+│  │  ├─ campaignHistory.ts · textUtils.ts · voice.ts
+│  │  └─ *.test.ts
+│  ├─ views/                      # Command, Sources, Graph, Noise, Verify, Tuning, ContentStudio, Alerts
 │  ├─ layout/AppShell.tsx
-│  └─ types.ts
+│  ├─ landing/LandingPage.tsx
+│  └─ hooks/useKseAnalysis.ts
 ├─ Implementation Plan.md
 ├─ HANDOFF.md
 ├─ docs/
+├─ tasks/
+├─ vitest.config.ts
 └─ package.json
 ```
 
 ---
 
-## API (prototype)
+## API
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/api/kse/run` | Full run: simulate/fallback → filter → graph → rank → report |
-| `POST` | `/api/kse/recalculate` | Re-score cached items (no LLM) after weight changes |
-| `POST` | `/api/content/campaigns` | Founder insight → brief + channel assets + quality reviews |
+### `POST /api/kse/run`
 
-Body (both):
+Full analysis for a topic.
 
 ```json
 {
@@ -125,18 +148,54 @@ Body (both):
 }
 ```
 
+### `POST /api/kse/recalculate`
+
+Re-rank from cache / offline path without full LLM re-ingest when possible.
+
+### `POST /api/content/campaigns`
+
+```json
+{
+  "insight": { "/* FounderInsight */": true },
+  "objective": "AWARENESS | TRUST | LEADS",
+  "founderContext": "optional",
+  "channels": ["X", "LINKEDIN"]
+}
+```
+
+Returns `{ id, brief, assets, reviews, is_fallback, createdAt }`.  
+Validation failures: `{ error, code: "VALIDATION", details: string[] }`.
+
+---
+
+## Verification snapshot (2026-07-18)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | 13/13 pass |
+| Typecheck | pass |
+| Real-user browser E2E | Landing → KSE → Sources/Studio → generate → approve → export |
+| npm audit | 0 known vulns (at last check) |
+| Confidence (lab) | ~83% — ship with conditions for public multi-tenant |
+
+Details: `HANDOFF.md`.
+
 ---
 
 ## What this is not (yet)
 
-- ❌ Official X API search / real bookmarks  
-- ❌ Capture & Context Pipeline (media download, Supabase archive, taxonomy export)  
-- ❌ Production multi-tenant product  
-
-**Next production step (per SSOT):** Phase 0 collection spike on real X tier; replace Gemini Stage ① with a budgeted Collector; keep graph/rank/UI.
+| Item | Status |
+|------|--------|
+| Live X / Twitter collection | ❌ Deferred |
+| Auto-publish / OAuth to socials | ❌ Out of V1 |
+| Capture & Context Pipeline code | ❌ Spec only |
+| Multi-tenant auth / billing | ❌ Deferred |
+| Hinglish / regional languages | ❌ Deferred |
+| CI browser E2E suite | ❌ Unit-only in CI |
+| Public unmetered deployment hardening | ⚠️ Rate limits / auth not productized |
 
 ---
 
 ## License
 
-Apache-2.0 (see source file headers where present).
+Apache-2.0 (see source headers where present).

@@ -1,14 +1,14 @@
-> **Document status:** X - Knowledge Signal Engine (Draft v1.2 — repo-ready) · Owner: (you) · Last updated: 2026-07-11
-> **Reading order:** `README.md` → **`00b-codebase-reality`** → `00-overview` → `01-architecture` → `02-reality-and-mvp` → `03-build-spec` → `04-ranking-and-provenance` → `05-roadmap`
-> **Companion:** `X_-_Capture_and_Context_Pipeline_11Jul26.md` (push-shaped capture; not built in this repo yet)
-> **Handoff detail:** `HANDOFF.md` (pipeline math/API; UI paths may lag — trust §0b + `src/views/` for layout)
-> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26
+> **Document status:** X - Knowledge Signal Engine (Draft v1.3 — repo-ready) · Last updated: **2026-07-18**  
+> **Reading order:** `README.md` → **`HANDOFF.md`** → **`00b-codebase-reality`** (this section) → design sections below  
+> **Companion:** `X_-_Capture_and_Context_Pipeline_11Jul26.md` (push-shaped capture; not built)  
+> **Founder Content OS plan:** `Implementation Plan.md` (V1 **shipped** — Content Studio)  
+> **GitHub:** https://github.com/KishoreKaathvi/X-KES-App-July26 · https://github.com/KishoreKaathvi/Founder-Content-OS  
 
 ---
 
-## 0b. Codebase reality (what AI Studio / Gemini actually built) ⚠️ READ THIS
+## 0b. Codebase reality (what is actually built) ⚠️ READ THIS
 
-This section was added after auditing the live repo against this SSOT. **The design layers below still define product truth.** The codebase is a **working algorithm + UI prototype** that went further in *product surface* than Phase 1 of this doc, while remaining **behind** on the binding constraint: **real X data access**.
+This section is the **binding map** of the live monorepo. Design layers below still define long-term product truth. The codebase is a **working algorithm + UI lab** that is **ahead** on product surface (full portal + Content Studio) and **behind** on the binding constraint: **real X data access**.
 
 ### What exists in the repo today
 
@@ -27,14 +27,18 @@ This section was added after auditing the live repo against this SSOT. **The des
 | Google Search grounding | ✅ best-effort | `tools: [{ googleSearch: {} }]` → `verification_grounding` |
 | Offline fallback dataset | ✅ | `createFallbackDataset(topic)` when no key / 429 / quota |
 | Model retry ladder | ✅ | `gemini-3.1-flash-lite` → `gemini-3.5-flash` → `gemini-flash-latest` + exp backoff + 5-min quota circuit-breaker |
-| Multi-view UI | ✅ **ahead of SSOT MVP** | `AppShell` + Command/Sources/Cascade/Noise/Verify/Weights/Watchlist |
+| Multi-view UI | ✅ **8 views** | `AppShell`: Command · Sources · Cascade · Noise · Verify · Weights · **Studio** · Watchlist |
+| Founder Content OS | ✅ **V1 shipped** | `src/content/*`, `ContentStudioView`, `POST /api/content/campaigns` |
+| Content channels | ✅ | X, LinkedIn, IG post/carousel/reel, WhatsApp, Facebook, YT short/video |
+| Content quality gate | ✅ | Heuristic scores + live re-score on edit; blocks weak approve/export |
+| Campaign history | ✅ browser-only | localStorage max 12 (`campaignHistory.ts`) |
 | Theme | ✅ | Light / Dark / System (no DaisyUI) |
-| Export | ✅ | JSON, TXT report, PDF (html2canvas + jsPDF) |
+| Export (KSE) | ✅ | JSON, TXT report, PDF (html2canvas + jsPDF) |
+| Export (Content OS) | ✅ | Markdown + JSON of approved drafts |
 | Capture pipeline | ❌ | Spec only — companion SSOT |
 | Deep-link share | ✅ | `?q=&node=&tMin=&tMax=` |
 | Manual claim flags | ✅ (UI) | Verified Fact / Misinformation / Satire → local score overrides (localStorage) |
 | Topic alerts | ✅ (UI only) | localStorage list — **not** a real notification backend |
-| Theme | ✅ | light / dark / system |
 | Keyboard UX | ✅ | Ctrl/Cmd+K search, arrows traverse originals, Esc clears |
 | Cluster / node sentiment badge | ✅ cosmetic | Keyword heuristic (+amazing/−fake style), not a product criterion |
 | Sparkline volatility on cards | ✅ cosmetic | Deterministic hash of post id — **not** real engagement time-series |
@@ -45,6 +49,7 @@ This section was added after auditing the live repo against this SSOT. **The des
 | `shared_entity` / `shared_hashtag` / `time_proximity` edges | ⚠️ typed only | Present in `src/types.ts`, **not** emitted in `server.ts` edge builder |
 | Python stack (Tweepy, NetworkX, SQLite…) | ❌ not used | Prototype is **Node/TypeScript + React** |
 | Capture & Context Pipeline | ❌ not in repo | Separate system; zero code here |
+| Auto-publish / multi-tenant auth | ❌ | Explicitly out of Content OS V1 |
 
 ### Critical honesty (do not re-litigate)
 
